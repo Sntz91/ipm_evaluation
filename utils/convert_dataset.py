@@ -19,7 +19,7 @@ def get_vehicles_from_random_ts(data):
     idx_ts = random.choice(list(data.keys()))
     return idx_ts, data[idx_ts]
 
-def filter_vehicles_not_in_img(data, w=640, h=480):
+def filter_vehicles_not_in_img(data, w=1920, h=1080):
     return [vehicle for vehicle in data if not is_vehicle_out_of_bounds(vehicle['gcp'], w, h)]
 
 def get_random_vehicle(data):
@@ -119,20 +119,49 @@ def get_data(ts, base_url='./', w=640, h=480):
 
     with open(base_url + 'output/tv/data.pickle', 'rb') as handle:
         data_tv = pickle.load(handle)
-    
+
+    #print(data_pv) 
+    for t, vehicles_t in data_pv.items():
+        vehicles_t = filter_vehicles_not_in_img(vehicles_t)
+        if vehicles_t == []:
+            continue
+        vehicles_t, _ = append_hull(base_url, vehicles_t)
+        vehicles_t = append_min_area_rect(vehicles_t)
+
+    for t, vehicles_t in data_tv.items():
+        vehicles_t = filter_vehicles_not_in_img(vehicles_t)
+        if vehicles_t == []:
+            continue
+        #vehicles_t, _ = append_hull(base_url, vehicles_t)
+        #vehicles_t = append_min_area_rect(vehicles_t)
+
+    with open(base_url + 'output/pv/data_new.pickle', 'wb') as handle:
+        pickle.dump(data_pv, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with open(base_url + 'output/tv/data_new.pickle', 'wb') as handle:
+        pickle.dump(data_tv, handle, protocol=pickle.HIGHEST_PROTOCOL)
     # Perspective View
-    vehicles_at_ts = get_vehicles_from_ts(data_pv, ts)
-    vehicles_at_ts_filtered = filter_vehicles_not_in_img(vehicles_at_ts, w, h)
-    vehicles_pv, image_seg = append_hull(base_url, vehicles_at_ts_filtered)
-    vehicles_pv = append_min_area_rect(vehicles_at_ts_filtered)
-    fname_pv = base_url + vehicles_at_ts_filtered[0]['img']
-    image_pv = Image.open(fname_pv)
+    # Perspective View
+    #vehicles_at_ts = get_vehicles_from_ts(data_pv, ts)
+    #vehicles_at_ts_filtered = filter_vehicles_not_in_img(vehicles_at_ts, w, h)
+    #vehicles_pv, image_seg = append_hull(base_url, vehicles_at_ts_filtered)
+    #vehicles_pv = append_min_area_rect(vehicles_at_ts_filtered)
+    #fname_pv = base_url + vehicles_at_ts_filtered[0]['img']
+    #image_pv = Image.open(fname_pv)
     
     # Top View
-    vehicles_at_ts_tv = get_vehicles_from_ts(data_tv, ts)
-    v_ids = get_vehicle_ids(vehicles_pv)
-    vehicles_tv = filter_tv_vehicles(vehicles_at_ts_tv, v_ids)
-    fname_tv = base_url+vehicles_tv[0]['img']
-    image_tv = Image.open(fname_tv)
+    #vehicles_at_ts_tv = get_vehicles_from_ts(data_tv, ts)
+    #v_ids = get_vehicle_ids(vehicles_pv)
+    #vehicles_tv = filter_tv_vehicles(vehicles_at_ts_tv, v_ids)
+    #fname_tv = base_url+vehicles_tv[0]['img']
+    #image_tv = Image.open(fname_tv)
 
-    return image_pv, image_tv, image_seg, vehicles_pv, vehicles_tv
+    #print(data_pv)
+    
+    #return image_pv, image_tv, image_seg, vehicles_pv, vehicles_tv
+
+#vehicles_pv = {}
+#image_pv, image_tv, image_set, vehicles_pv_t, vehicles_tv_t = get_data(5, base_url='/Users/tobias/ziegleto/data/5Safe/carla/circle/', w=1920, h=1080)
+#print(vehicles_pv)
+
+get_data(5, base_url='/Users/tobias/ziegleto/data/5Safe/carla/circle/', w=1920, h=1080)

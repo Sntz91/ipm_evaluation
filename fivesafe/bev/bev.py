@@ -64,7 +64,6 @@ class PositionEstimation:
             sort_by_y_desc = box[sort_order]
             #  This point is guranted part of the bottom edge of a object
             bottom_vertice_0 = sort_by_y_desc[0]
-            print(bottom_vertice_0)
             bottom_edge[0] = bottom_vertice_0
             candidate_length_0 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_0)
             candidate_length_1 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_1)
@@ -165,7 +164,6 @@ class PositionEstimation:
 
     def move_ground_contact_points_by_bb_coordinates(self):
         for point in self.ground_contact_points_image:
-            print(point)
             point[0] = point[0] + self.bb_coordinates[1] - self.bb_coordinates[3]
             point[1] = point[1] + self.bb_coordinates[0]
 
@@ -241,7 +239,6 @@ class PositionEstimation:
     
     def transform_point_from_world_to_image(self, point):
         point = [point[0], point[1], np.array([[1]], dtype=np.float32)]
-        print(point)
         warped_point = np.matmul(self.inv_Homography_Matrix, np.array([point[0].item(), point[1].item(), 1]))
         scaling = 1 / warped_point[2]
 

@@ -30,3 +30,9 @@ class Tracks(Measurements):
 
     def append_measurement(self, measurement) -> None:
         self.append(measurement)
+
+    def get_world_positions(self):
+        out = []
+        for track in self:
+            out.append(track.world_position)
+        return out

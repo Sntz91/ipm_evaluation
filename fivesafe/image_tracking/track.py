@@ -18,6 +18,7 @@ class Track(Measurement):
         self.score = score
         self.detection_id = detection_id
         self.threshold = threshold
+        self.vehicle_gt_id = [] 
 
     def __repr__(self) -> str:
         return f'Track id: {self.id}, class: {self.label()}, \
