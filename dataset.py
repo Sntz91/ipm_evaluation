@@ -41,11 +41,11 @@ class VehiclePSIDataset(Dataset):
         self.base_url = base_url
 
         # Load to RAM
-        with open(base_url + 'output/pv/data_new.pickle', 'rb') as handle:
+        with open(base_url + '/pv/data_new.pickle', 'rb') as handle:
             self.data_pv = pickle.load(handle)
 
     def __len__(self):
-        return len(self.data_pv)-1
+        return len(self.data_pv)-2
 
     def __getitem__(self, idx): # Note this only works for 1 car per image
         label_t1 = self.data_pv[idx+2][0]
@@ -108,15 +108,15 @@ if __name__ == '__main__':
     from torch.utils.data import DataLoader
     import matplotlib.pyplot as plt
 
-    dataset = VehiclePSIDataset(base_url='/Users/tobias/ziegleto/data/5Safe/carla/circle/')
+    dataset = VehiclePSIDataset(base_url='/Users/tobias/ziegleto/data/5Safe/carla/etron')
 
     for i in range(len(dataset)):
         hull, psi = dataset.__getitem__(i)
         img = dataset._get_image(i)
-        plt.imshow(img)
+        #plt.imshow(img)
         hull_ = hull[0].numpy()
-        plt.scatter(hull_[:, 1], hull_[:, 0])
-        plt.show()
+        #plt.scatter(hull_[:, 1], hull_[:, 0])
+        #plt.show()
         pt0 = (500, 500)
         img = cv2.arrowedLine(img, pt0, (int(pt0[0]+psi[0]*100), int(pt0[1]+psi[1]*100)), (0, 255, 0), 5)
         img = cv2.imshow('img', img)
