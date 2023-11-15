@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import cv2
 import torch
-
+from fivesafe.object_detection import Detection_w_mask, draw_detection
 
 class VehicleDataset(Dataset):
     def __init__(self, base_url, transform=None, target_transform=None):
@@ -41,15 +41,15 @@ class VehiclePSIDataset(Dataset):
         self.base_url = base_url
 
         # Load to RAM
-        with open(base_url + '/pv/data_new.pickle', 'rb') as handle:
-            self.data_pv = pickle.load(handle)
+        with open(base_url + '/data_new.pickle', 'rb') as handle:
+            self.vehicle_data = pickle.load(handle)
 
     def __len__(self):
-        return len(self.data_pv)-2
+        return len(self.vehicle_data)-1
 
     def __getitem__(self, idx): # Note this only works for 1 car per image
-        label_t1 = self.data_pv[idx+2][0]
-        label_t0 = self.data_pv[idx+1][0]
+        label_t1 = self.vehicle_data[idx+1][0]
+        label_t0 = self.vehicle_data[idx][0]
 
         mask_t1 = self._normalize_mask(label_t1['hull'])
         mask_t0 = self._normalize_mask(label_t0['hull'])
@@ -57,9 +57,13 @@ class VehiclePSIDataset(Dataset):
         # nr_of_masks, mask_len, point_dimension
         masks = torch.stack((mask_t0, mask_t1))
         return masks, psi
-    
+
+    def _get_bb(self, idx):
+        vehicle = self.vehicle_data[idx+1][0]
+        return vehicle['bb']
+
     def _get_image(self, idx):
-        label_pv = self.data_pv[idx+2]
+        label_pv = self.vehicle_data[idx+1]
         image_pv_url = self.base_url + label_pv[0]['img']
         image_pv = cv2.imread(image_pv_url)
         return image_pv
@@ -76,7 +80,7 @@ class VehiclePSIDataset(Dataset):
         return torch.from_numpy(mask)
     
     @staticmethod
-    def pad_to_n(hull: np.ndarray, n_points: int = 50) -> np.ndarray:
+    def pad_to_n(hull: np.ndarray, n_points: int = 65) -> np.ndarray:
         """Pad hull to always have n_points coordinates
  
         Args:
@@ -104,17 +108,23 @@ def bb_to_2d(bb):
     y_min, y_max = np.min(bb[:, 1]), np.max(bb[:, 1])
     return x_min, y_min, x_max, y_max
 
-if __name__ == '__main__':
-    from torch.utils.data import DataLoader
-    import matplotlib.pyplot as plt
 
+
+
+def test_dataset():
     dataset = VehiclePSIDataset(base_url='/Users/tobias/ziegleto/data/5Safe/carla/etron')
-
     for i in range(len(dataset)):
         hull, psi = dataset.__getitem__(i)
         img = dataset._get_image(i)
         #plt.imshow(img)
-        hull_ = hull[0].numpy()
+        hull_ = hull[1].numpy()
+        detection = Detection_w_mask(
+            xyxy=dataset._get_bb(i),
+            label_id = 2,
+            score = 1.0,
+            mask = hull_[:, [1, 0]]
+        )
+        draw_detection(img, detection, mask=True)
         #plt.scatter(hull_[:, 1], hull_[:, 0])
         #plt.show()
         pt0 = (500, 500)
@@ -125,5 +135,39 @@ if __name__ == '__main__':
             break
         print(psi)
 
-        # PLOT MASKS TODO
+        # TODO camera extrinsics into dataset (extra file, we have name in data)
 
+
+def train():
+    from torch.utils.data import DataLoader
+    from torch.utils.data import random_split
+
+    BATCH_SIZE = 64
+
+    dataset = VehiclePSIDataset(base_url='/Users/tobias/ziegleto/data/5Safe/carla/etron')
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+    train_set, val_set = random_split(dataset, [train_size, test_size])
+    train_dataloader = DataLoader(train_set, batch_size=64, shuffle=True)
+    val_dataloader = DataLoader(val_set, batch_size=64, shuffle=True)
+    print(f'TRAINING: number of batches: {len(train_dataloader)}, each with batchsize: {BATCH_SIZE}')
+    print(f'VAL: number of batches: {len(val_dataloader)}, each with batchsize: {BATCH_SIZE}')
+    
+    X_train, y_train = next(iter(train_dataloader))
+    X_val, y_val = next(iter(val_dataloader))
+    print(f'Feature size: {X_train.size()}') #batch, mask, points, xy
+    print(f'Label size: {y_train.size()}') # batch, xy (psi)
+
+    #regr = MLPRegressor(random_state=1, max_iter=500).fit(X_train, y_train)
+    #regr.predict(X_val)
+
+    # CAMERA EXTRINSICS.
+
+    # PROPOSAL.
+    # URLAUB.
+    # PROF. OSENDORFER.?
+
+
+
+if __name__ == '__main__':
+    test_dataset()
