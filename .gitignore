@@ -1,2 +1,4 @@
 **/yolov8n-seg.pt
+**/yolov8s-seg.pt
 **/__pycache__/**
+**/.ipynb_checkpoints/**

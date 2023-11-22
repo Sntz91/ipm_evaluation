@@ -1,7 +1,7 @@
 import yaml
 import cv2
 import numpy as np
-from utilities import draw_contours
+from ..utilities import draw_contours
 
 def init_contours(cfg_name):
     contours = []

@@ -20,34 +20,10 @@ def abs_dist_batch(detections, trackers):
   From SORT: Computes IOU between two bboxes in the form [x1,y1,x2,y2]
   """
   trackers = trackers[:,0:2]
-  detections = detections[:,0:2]
   
   dist_array = cdist(detections, trackers, "euclidean")
                                            
-  return(dist_array)
-
-def cosine_rvec_smooting(rvec_curr, rvec_candidate, weightfactor = 1):
-  if rvec_curr.any() is None:
-    return rvec_candidate
-  if rvec_candidate.any() is np.nan:
-    return rvec_curr
-  else:
-    dot_product = np.dot(np.squeeze(rvec_curr), np.squeeze(rvec_candidate))
-    rvec_delta_angle = np.arccos(dot_product)
-    norm_count = 1
-    while abs(rvec_delta_angle) > (np.pi):
-      if rvec_delta_angle > np.pi:
-        rvec_delta_angle = rvec_delta_angle -(np.pi)
-        norm_count += 1
-      if rvec_delta_angle < np.pi:
-        rvec_delta_angle = rvec_delta_angle +(np.pi)
-        norm_count += 1
-    turn_flag = norm_count %2
-    rvec_aggergated = rvec_curr+ np.cos(rvec_delta_angle) * rvec_candidate * weightfactor
-    rvec = rvec_aggergated / np.linalg.norm(rvec_aggergated)
-    if not turn_flag:
-      rvec = rvec * -1
-    return rvec  
+  return(dist_array)  
 
 
 class KalmanWorldTracker(object):
@@ -55,7 +31,7 @@ class KalmanWorldTracker(object):
   This class represents the internal state of individual tracked objects observed as bbox.
   """
   count = 0
-  def __init__(self,bbox, dt):
+  def __init__(self,bbox, dt, v_x=0, v_y=0):
     """
     Initialises a tracker using initial bounding box.
     """
@@ -77,20 +53,15 @@ class KalmanWorldTracker(object):
     self.kf.Q = block_diag(q, q)
     self.kf.alpha = 1.2
 
-    self.kf.x = np.array([[bbox[0], bbox[1], 0, 0]]).T
+    #self.kf.x = np.array([[bbox[0], bbox[1], v_x, v_y]]).T ; v_x, v_y are values from the image tracker
+    self.kf.x = np.array([[bbox[0], bbox[1], v_x, v_y]]).T
     self.time_since_update = 0
     self.id = KalmanWorldTracker.count
     KalmanWorldTracker.count += 1
     self.history = []
-    self.rvec_ringbuffer = []
-    self.position_last_rvec_update = np.array([[bbox[0]], [bbox[1]]])
-    self.actual_rvec  = np.array([[None], [None]])
-    self.tracked_class_id = bbox[2]
     self.hits = 0
     self.hit_streak = 0
     self.age = 0
-
-    self.get_first_rvec_estimate_from_infrastructure()
 
     #self.original_id = bbox[5] # <--- add to keep track of original IDs
 
@@ -103,8 +74,7 @@ class KalmanWorldTracker(object):
     self.hits += 1
     self.hit_streak += 1
     #self.original_id = bbox[5]  # <--- update to keep track of original IDs
-    self.kf.update((bbox[0:2]))
-    self.tracked_class_id = bbox[2]
+    self.kf.update((bbox))
 
   def predict(self):
     """
@@ -116,18 +86,6 @@ class KalmanWorldTracker(object):
       self.hit_streak = 0
     self.time_since_update += 1
     self.history.append(self.kf.x)
-    if self.tracked_class_id ==2:
-      current_postion = np.array([self.history[0][0], self.history[0][1]])
-      ### Marcels Codeblock for Angle Estimation from current Movement Pattern ###
-      dist_rvec_update = np.sqrt((self.position_last_rvec_update[0] - current_postion[0]) * (self.position_last_rvec_update[0] - current_postion[0]) + (self.position_last_rvec_update[1] - current_postion[1]) * (self.position_last_rvec_update[1] - current_postion[1]))
-          #TODO: Update rvec estimate only if object moved a certain amount
-          #TODO: Initial rvec Estimate from Map
-      th = 1 *  ((632.26/13.5))
-      if dist_rvec_update > th:
-        rvec_candidate = self.get_rvec_from_two_points(current_postion, self.position_last_rvec_update)
-        self.actual_rvec  = cosine_rvec_smooting(self.actual_rvec, rvec_candidate)
-        self.position_last_rvec_update = current_postion
-
     return self.history[-1]
 
   def get_state(self):
@@ -135,49 +93,9 @@ class KalmanWorldTracker(object):
     Returns the current bounding box estimate.
     """
     return self.kf.x[0:2]
-  
-  def get_age(self):
-    """
-    Returns the age of the KalmanWorldTracker
-    """
-    return self.age
-  
-  def get_rvec_estimate_from_track_history(self):
-    pos_latest = self.rvec_ringbuffer[-1]
-    pos_old = self.rvec_ringbuffer[0]
-    rvec = self.get_rvec_from_two_points(pos_latest, pos_old)
 
-    return rvec
-  
-  def get_first_rvec_estimate_from_infrastructure(self):
-    if self.tracked_class_id ==2:
-      # Initial rvec part
-      initial_rvec_positions = [[2400, 1200, -.5, -.5],
-                                [1500, 500, .5, 0.5],
-                                [2300, 600, -.5, .5],
-                                [1200, 1100, .9, 0.1]]
-      erglist = list()
-      for vec in initial_rvec_positions:
-        dist = np.sqrt((vec[0] - self.position_last_rvec_update[0]) * (vec[0] - self.position_last_rvec_update[0]) + (vec[1] - self.position_last_rvec_update[1]) * (vec[1] - self.position_last_rvec_update[1]))
-        erglist.append(dist)
 
-        idx = erglist.index(min(erglist))
-        self.actual_rvec  = np.array([[initial_rvec_positions[idx][2]], [initial_rvec_positions[idx][3]]])
-    else:
-      self.actual_rvec = np.array([[None], [None]])
-
-  @staticmethod
-  def get_rvec_from_two_points(point1, point2):
-    rvec = point2 - point1
-    norm = np.linalg.norm(rvec)
-    #if norm > 0.1:
-    rvec = np.array([(point1[0] - point2[0]) / norm,
-                                          (point1[1] - point2[1]) / norm], dtype=np.float32)
-      
-    return rvec
-    
-
-def associate_detections_to_trackers(detections,trackers, dist_threshold):
+def associate_detections_to_trackers(detections,trackers, dist_threshold = 5*81/5):
   """
   Assigns detections to tracked object (both represented as World Positions)
 
@@ -223,7 +141,7 @@ def associate_detections_to_trackers(detections,trackers, dist_threshold):
 
 
 class WorldSort(object):
-  def __init__(self, max_age=5, min_hits=0, dist_threshold = 632.26/13.5*5, dt_std = 1/30):
+  def __init__(self, max_age=5, min_hits=0, dist_threshold = 5*81/5, dt_std = 1/30): # initial weights: self, max_age=1, min_hits=3, iou_threshold=0.3
     """
     Sets key parameters for SORT
     """
@@ -262,15 +180,17 @@ class WorldSort(object):
     for m in matched:
       self.trackers[m[1]].update(dets[m[0], :])
 
-    # create and initialise new trackers for unmatched detections
+    # create and initialise new trackers for unmatched detections -> TODO use image tracking vx, vy for initialization
+    # Find via tracking id
     for i in unmatched_dets:
-        trk = KalmanWorldTracker(dets[i,:], self.dt_std)
+        trk = KalmanWorldTracker(dets[i,:], self.dt_std) # new parameter
+        #trk = KalmanWorldTracker(dets[i,:], self.dt_std, dets[i,:].vx, dets[i,:].vy) # new parameter
         self.trackers.append(trk)
     i = len(self.trackers)
     for trk in reversed(self.trackers):
         d = trk.get_state()
         if (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):  #(trk.time_since_update < 1) and
-          ret.append(np.concatenate((d[0], d[1], [trk.id+1], trk.actual_rvec[0], trk.actual_rvec[1])).reshape(1,-1)) # +1 as MOT benchmark requires positive  # <--- add [trk.original_id] to the returned set
+          ret.append(np.concatenate((d[0], d[1], [trk.id+1])).reshape(1,-1)) # +1 as MOT benchmark requires positive  # <--- add [trk.original_id] to the returned set
         i -= 1
         # remove dead tracklet
         if(trk.time_since_update > self.max_age):

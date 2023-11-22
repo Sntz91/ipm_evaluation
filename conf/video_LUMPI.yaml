@@ -1,0 +1,4 @@
+capture_url: '/Users/tobias/ziegleto/data/5Safe/LUMPI_Measurement1/video.mp4' 
+top_view: '/Users/tobias/ziegleto/data/5Safe/LUMPI_Measurement1/Refimg.JPG'
+homography: '/Users/tobias/ziegleto/data/5Safe/LUMPI_Measurement1/homography_matrix.json'
+model: 'yolov8s-seg.pt'

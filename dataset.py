@@ -108,7 +108,36 @@ def bb_to_2d(bb):
     y_min, y_max = np.min(bb[:, 1]), np.max(bb[:, 1])
     return x_min, y_min, x_max, y_max
 
+def train():
+    from torch.utils.data import DataLoader
+    from torch.utils.data import random_split
+    n_points_per_hull = 65
 
+    image_width, image_height = 1920, 1080
+    image_scaler = ScaleToImage(image_width, image_height)
+    feature_scaler = StandardScaler()
+    inverse_pipeline = Pipeline(
+        steps=[("Standard scaler", feature_scaler),
+               ("Images size scaler", image_scaler)]
+    )
+    label_scaler = StandardScaler()
+    feature_pipeline = Pipeline(
+        steps=[("Pad hull", PadHull(False, n_points_per_hull)),
+               ("Scale to image", image_scaler),
+               ("Flatten coordinates", FlattenCoordinates(n_points_per_hull)),
+               #("Standard scaler", feature_scaler)
+               ]
+    )
+
+    dataset = VehiclePSIDataset(base_url='/Users/tobias/ziegleto/data/5Safe/carla/etron')
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+    train_set, val_set = random_split(dataset, [train_size, test_size])
+    train_dataloader = DataLoader(train_set, batch_size=None, shuffle=True)
+    val_dataloader = DataLoader(val_set, batch_size=None, shuffle=True)
+    
+    X_train, y_train = next(iter(train_dataloader))
+    X_val, y_val = next(iter(val_dataloader))
 
 
 def test_dataset():
@@ -138,7 +167,7 @@ def test_dataset():
         # TODO camera extrinsics into dataset (extra file, we have name in data)
 
 
-def train():
+def train_():
     from torch.utils.data import DataLoader
     from torch.utils.data import random_split
 

@@ -1,0 +1,9 @@
+# Config for setting TURNING RIGHT Zones
+points:
+  pts_turn_right_zone_1: [
+    [2543, 1229],
+    [2466, 1229],
+    [2466, 1521],
+    [2536, 1521]
+  ]
+color: [0, 69, 255]
