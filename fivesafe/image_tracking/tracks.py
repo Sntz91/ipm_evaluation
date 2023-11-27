@@ -32,7 +32,7 @@ class Tracks(Measurements):
         self.append(measurement)
 
     def get_world_positions(self):
-        out = []
+        positions = []
         for track in self:
-            out.append(track.world_position)
-        return out
+            positions.append(track.world_position)
+        return positions

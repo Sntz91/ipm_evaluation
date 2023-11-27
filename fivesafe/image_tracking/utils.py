@@ -31,9 +31,9 @@ def draw_track(frame, track, draw_detection_id=True, color=None):
     )
     return frame
 
-def draw_tracks(frame, tracks):
+def draw_tracks(frame, tracks, draw_detection_id=True, color=None):
     for track in tracks:
-        frame = draw_track(frame, track, draw_detection_id=False)
+        frame = draw_track(frame, track, draw_detection_id=draw_detection_id, color=color)
     return frame
 
 def draw_debug_tracks(frame, tracks, detections):

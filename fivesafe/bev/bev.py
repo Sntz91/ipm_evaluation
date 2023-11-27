@@ -330,6 +330,13 @@ class PositionEstimation:
 
         #return pt_new, self.rotated_rvec, self.ground_contact_points_image, self.shifted_candidate_1_image, self.shifted_candidate_2_image, self.ground_contact_points_world
         return pt_new, self.rotated_rvec, self.ground_contact_points_image
+    
+    def transform(self, tracks, detections):
+        for track in tracks:
+            mask = detections[track.detection_id-1].mask
+            world_position, psi_world, gcp_img = self.map_entity_and_return_relevant_points(track, mask)
+            track.xy_world = (world_position[0], world_position[1])
+        return tracks
 
 
 

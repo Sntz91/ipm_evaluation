@@ -3,21 +3,17 @@ import cv2
 import numpy as np
 from ..utilities import draw_contours
 
-def init_contours(cfg_name):
+def get_contours(points):
     contours = []
-    with open(cfg_name, 'r') as file:
-        cfg = yaml.safe_load(file)
-    color = cfg['color']
-
-    for _, points in cfg['points'].items():
+    for points_ in points:
         contours.append(
             cv2.convexHull(
-                np.array(points).reshape((-1, 1, 2)), 
+                np.array(points_).reshape((-1, 1, 2)), 
                 cv2.RETR_EXTERNAL, 
                 cv2.CHAIN_APPROX_SIMPLE
             )
         )
-    return contours, color
+    return contours
 
 def draw_polylines_in_top_view(top_view, contours, thickness=3, color=(255, 0, 0)):
     top_view = draw_contours(top_view, contours, -1, color=color, thickness=thickness)
