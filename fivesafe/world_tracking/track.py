@@ -8,26 +8,27 @@ class Track(Measurement):
     def __init__(
         self, 
         xy: tuple, 
-        label_id: int, 
-        score: int, 
-        detection_id: int, 
+        rvec_x: float, 
+        rvec_y: float,
         id: int, 
+        detection_id: int, 
         threshold: int = 10
     ) -> None:
         self.id = id
         self.xy = xy
-        self.label_id = label_id
-        self.score = score
+        self.rvec_x = rvec_x
+        self.rvec_y = rvec_y
         self.detection_id = detection_id
         self.threshold = threshold
         self.vehicle_gt_id = [] 
 
     def __repr__(self) -> str:
-        return f'Track id: {self.id}, class: {self.label()}, \
-            score: {self.score:.2f}, box: {self.xywh()}, \
+        # TODO!
+        return f'Track id: {self.id},  \
             detection_id: {self.detection_id}'
     
     def xywh(self):
+        # TODO
         pass
     
     @staticmethod
@@ -50,6 +51,7 @@ class Track(Measurement):
         color=(255, 0, 0), 
         offset=(0, 0)
     ) -> np.ndarray:
+        # TODO
         return cv2.putText(
             frame, 
             f'id: {self.id}, d_id: {self.detection_id}',

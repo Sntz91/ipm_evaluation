@@ -1,4 +1,5 @@
 import distinctipy
+
 N = 100
 _colors = distinctipy.get_colors(100)
 COLORS = []

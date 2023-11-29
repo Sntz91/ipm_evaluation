@@ -16,12 +16,14 @@ class Tracks(Measurements):
 
     def numpy_to_tracks(self, track_list: np.ndarray):
         for track_candidate in track_list:
-            print(track_candidate)
-            x, y, track_id, detection_id, score, label_id = track_candidate
+            x, y, track_id, rvec_x, rvec_y, detection_id = track_candidate
+            # TODO LABEL!
+            if not detection_id: # No GT
+                detection_id = 0
             track_candidate = Track(
                 xy=(x, y), 
-                label_id=int(label_id),
-                score=score, 
+                rvec_x=rvec_x, 
+                rvec_y=rvec_y, 
                 id=int(track_id), 
                 detection_id=int(detection_id)
             )

@@ -111,3 +111,17 @@ def connect_socket(url, port):
     sock.listen(1)
     connection, client_address = sock.accept()
     return connection, client_address
+
+def calculate_euclidean_distance(pt1, pt2, scaling_factor=1):
+    assert pt1.shape == pt2.shape, "points must be same dim."
+    distance = np.sqrt(np.sum((pt1-pt2)**2))
+    return distance * scaling_factor
+
+def calculate_distance_matrix(arr1, arr2, scaling_factor=1):
+    size_arr1 = arr1.shape[0]
+    size_arr2 = arr2.shape[0]
+    dist_matrix = np.zeros((size_arr1, size_arr2))
+    for i in range(size_arr1):
+        for j in range(size_arr2):
+            dist_matrix[i, j] = calculate_euclidean_distance(arr1[i], arr2[j], scaling_factor)
+    return dist_matrix 
