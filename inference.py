@@ -1,7 +1,3 @@
-# I need to differentiate between: 
-# --- Dataset       -> Evaluation (evaluation.py)
-# --- Video / Img:  -> Inference (inference.py)
-
 from fivesafe.utilities import run
 from fivesafe.object_detection import find_detector_class
 from fivesafe.bev import PositionEstimation, draw_world_positions, draw_vehicle_baseplates
@@ -41,7 +37,7 @@ def start(cap, cfg):
         image_tracks_transformed = position_estimator.transform(image_tracks, detections)
         world_tracks_vrus, world_tracks_vehicles = world_tracker.track(image_tracks_transformed)
         # Drawing TODO DM -> Crowded, ...
-        top_view = draw_world_positions(top_view, world_tracks_vrus, 0, cfg.standard_color)
+        top_view = draw_world_positions(top_view, world_tracks_vrus, cfg.standard_color)
         top_view = draw_vehicle_baseplates(top_view, world_tracks_vehicles, cfg.bev.scalefactor, cfg.standard_color, 3)
         frame = draw_tracks(frame, image_tracks, color=cfg.standard_color, draw_detection_id=True)
         cv2.imshow("perspective_view", frame)

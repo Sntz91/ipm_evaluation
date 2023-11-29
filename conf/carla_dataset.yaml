@@ -1,0 +1,8 @@
+dataset:
+  url: '/home/ziegleto/ziegleto/data/5Safe/carla/circle/'
+detection:
+  use_gt: true
+bev:
+  scalefactor: 5
+  homography: './conf/homography_matrix.json'
+standard_color: [0, 0, 255]

@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset
+from ..object_detection import Detections, Detection_w_mask
 import numpy as np
 import pickle
 import cv2
@@ -24,7 +25,7 @@ class VehicleDataset(Dataset):
         assert len(self.data_pv) == len(self.data_tv), 'tv pv not same length?'
 
     def __len__(self):
-        return len(self.data_pv)-1
+        return len(self.data_pv)-2
 
     def __getitem__(self, idx):
         idx = idx+1 
@@ -36,6 +37,37 @@ class VehicleDataset(Dataset):
         image_tv = cv2.imread(image_tv_url)
 
         return (image_pv, image_tv), (label_pv, label_tv) 
+    
+    def get_image_size(self):
+        image_pv_url = self.base_url + self.data_pv[1][0]['img']
+        image_pv = cv2.imread(image_pv_url)
+        return image_pv.shape
+    
+    @staticmethod
+    def get_gt_detections(vehicles):
+        gt_detections = Detections()
+
+        for vehicle in vehicles:
+            hull = vehicle['hull']
+            hull = hull[:, [1, 0]]
+            detection = Detection_w_mask(
+                xyxy = bb_to_2d(np.asarray(vehicle['bb'])),
+                label_id = 2,
+                score = 1.0,
+                mask = hull
+            )
+            detection.vehicle_gt_id = vehicle['id']
+            gt_detections.append_measurement(detection)
+
+        return gt_detections
+    
+    @staticmethod
+    def get_gcps(vehicles):
+        gcps = []
+        for vehicle in vehicles:
+            gcps.append(vehicle['gcp'])
+        return gcps
+
 
 
 class VehicleMaskPsiDataset(Dataset):

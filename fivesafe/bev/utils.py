@@ -9,11 +9,9 @@ def draw_world_position(top_view, position, track_id, color=None):
     top_view = cv2.circle(top_view, (int(position[0]), int(position[1])), 10, color, -1)
     return top_view
 
-def draw_world_positions(top_view, positions, track_id, color=None):
-    if not color: 
-        color = COLORS[track_id] 
-    for position in positions:
-        top_view = cv2.circle(top_view, (int(position[0]), int(position[1])), 10, color, -1)
+def draw_world_positions(top_view, tracks, color=None):
+    for track in tracks:
+        top_view = draw_world_position(top_view, track.xy, track.id, color=color)
     return top_view
 
 def draw_vehicle_baseplates(top_view, tracks, scalefactor, color=None, thickness=10):

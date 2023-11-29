@@ -29,7 +29,7 @@ def abs_dist_batch(detections, trackers):
 def cosine_rvec_smooting(rvec_curr, rvec_candidate, weightfactor = 1):
   if rvec_curr.any() is None:
     return rvec_candidate
-  if rvec_candidate.any() is np.nan:
+  if np.isnan(rvec_candidate).any():
     return rvec_curr
   else:
     dot_product = np.dot(np.squeeze(rvec_curr), np.squeeze(rvec_candidate))
@@ -42,10 +42,17 @@ def cosine_rvec_smooting(rvec_curr, rvec_candidate, weightfactor = 1):
       if rvec_delta_angle < np.pi:
         rvec_delta_angle = rvec_delta_angle +(np.pi)
         norm_count += 1
-    turn_flag = norm_count %2
-    rvec_aggergated = rvec_curr+ np.cos(rvec_delta_angle) * rvec_candidate * weightfactor
-    rvec = rvec_aggergated / np.linalg.norm(rvec_aggergated)
-    if not turn_flag:
+    if dot_product < 0.1 and dot_product > 0:
+      rvec_aggergated = rvec_curr + rvec_candidate * weightfactor
+    else:
+      rvec_aggergated = rvec_curr + np.cos(rvec_delta_angle) * rvec_candidate * weightfactor
+      #rvec_aggergated = rvec_candidate 
+    if np.linalg.norm(rvec_aggergated) < 0.01:
+      rvec  = rvec_curr
+    else:
+      rvec = rvec_aggergated / np.linalg.norm(rvec_aggergated)
+
+    if dot_product <0:
       rvec = rvec * -1
     return rvec  
 
@@ -86,6 +93,7 @@ class KalmanWorldTracker(object):
     self.position_last_rvec_update = np.array([[bbox[0]], [bbox[1]]])
     self.actual_rvec  = np.array([[None], [None]])
     self.tracked_class_id = bbox[2]
+    self.detection_id = bbox[3]
     self.hits = 0
     self.hit_streak = 0
     self.age = 0
@@ -170,11 +178,13 @@ class KalmanWorldTracker(object):
   def get_rvec_from_two_points(point1, point2):
     rvec = point2 - point1
     norm = np.linalg.norm(rvec)
-    #if norm > 0.1:
-    rvec = np.array([(point1[0] - point2[0]) / norm,
-                                          (point1[1] - point2[1]) / norm], dtype=np.float32)
-      
+    if norm > 0.0001:
+      rvec = np.array([(point1[0] - point2[0]) / norm,
+                                            (point1[1] - point2[1]) / norm], dtype=np.float32)
+    else:
+      return np.array([[np.nan], [np.nan]])
     return rvec
+
     
 
 def associate_detections_to_trackers(detections,trackers, dist_threshold):
@@ -270,7 +280,8 @@ class WorldSort(object):
     for trk in reversed(self.trackers):
         d = trk.get_state()
         if (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):  #(trk.time_since_update < 1) and
-          ret.append(np.concatenate((d[0], d[1], [trk.id+1], trk.actual_rvec[0], trk.actual_rvec[1])).reshape(1,-1)) # +1 as MOT benchmark requires positive  # <--- add [trk.original_id] to the returned set
+          tmp = np.concatenate((d[0], d[1], [trk.id+1], trk.actual_rvec[0], trk.actual_rvec[1], [trk.detection_id]))
+          ret.append(tmp.reshape(1,-1)) # +1 as MOT benchmark requires positive  # <--- add [trk.original_id] to the returned set
         i -= 1
         # remove dead tracklet
         if(trk.time_since_update > self.max_age):
