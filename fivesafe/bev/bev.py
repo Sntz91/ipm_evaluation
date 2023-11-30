@@ -219,6 +219,8 @@ class PositionEstimation:
             length = 0
         elif self.obj_class == "bicycle":
             length = 0.3
+        elif self.obj_class == "motorcycle":
+            length = 0.3
         elif self.obj_class == "car" and self.high_bb_flag:
             length = 1.2
         elif self.obj_class == "car" and not self.high_bb_flag:
