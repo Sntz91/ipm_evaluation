@@ -2,12 +2,12 @@ input:
   url: '/home/ziegleto/ziegleto/data/5Safe/LUMPI_Measurement1/video.mp4' 
 detection:
   model: 'yolov8s-seg.pt'
-  classes_of_interest: ['person', 'car', 'bicycle', 'truck']
+  classes_of_interest: ['person', 'car', 'bicycle', 'motorcycle', 'truck', 'bus']
 bev:
   top_view: '/home/ziegleto/ziegleto/data/5Safe/LUMPI_Measurement1/Refimg.JPG'
   homography: '/home/ziegleto/ziegleto/data/5Safe/LUMPI_Measurement1/homography_matrix.json'
   scalefactor: 17.814
-standard_color: [79, 79, 47]
+standard_color: [0, 69, 255]
 dm: 
   is_used: false
   not_intended_paths:

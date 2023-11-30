@@ -20,10 +20,10 @@ def draw_vehicle_baseplates(top_view, tracks, scalefactor, color=None, thickness
         rvec_normed = (trj.rvec_x, trj.rvec_y)
         # Draw in Perspective- and Top-View
         top_view = draw_world_position(top_view, world_position, trj.id, color)
-        #try: 
-        top_view = draw_vehicle_baseplate(top_view, np.array([[trj.xy[0]], [trj.xy[1]]]), np.array([[rvec_normed[0]], [rvec_normed[1]]]), 4.5, 1.8, scalefactor, thickness=thickness)
-        #except:
-        #    pass
+        try: 
+            top_view = draw_vehicle_baseplate(top_view, np.array([[trj.xy[0]], [trj.xy[1]]]), np.array([[rvec_normed[0]], [rvec_normed[1]]]), 4.5, 1.8, scalefactor, thickness=thickness)
+        except:
+            pass
 
     return top_view
 
