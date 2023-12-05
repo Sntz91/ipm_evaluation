@@ -9,9 +9,11 @@ def draw_world_position(top_view, position, track_id, color=None):
     top_view = cv2.circle(top_view, (int(position[0]), int(position[1])), 10, color, -1)
     return top_view
 
-def draw_world_positions(top_view, tracks, colors):
+def draw_world_positions(top_view, tracks, colors, fixed_color=None):
     for track in tracks:
         color_ = getattr(colors, track.label())
+        if fixed_color:
+            color_ = fixed_color
         top_view = draw_world_position(top_view, track.xy, track.id, color=color_)
     return top_view
 

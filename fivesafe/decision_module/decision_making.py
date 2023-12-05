@@ -15,6 +15,19 @@ def get_contours(points):
         )
     return contours
 
+def get_vrus_in_zones(tracks, contours_int_path, contours_turn_right):
+    int_path_vrus, turn_right_vrus = [], []
+    for track in tracks:
+        for contour in contours_int_path:
+            if cv2.pointPolygonTest(contour, track.xy, False) != -1:
+                int_path_vrus.append(track)
+        for contour in contours_turn_right:
+            if cv2.pointPolygonTest(contour, track.xy, False) != -1:
+                turn_right_vrus.append(track)
+    return int_path_vrus, turn_right_vrus
+
+
+
 def draw_polylines_in_top_view(top_view, contours, thickness=3, color=(255, 0, 0)):
     top_view = draw_contours(top_view, contours, -1, color=color, thickness=thickness)
 
