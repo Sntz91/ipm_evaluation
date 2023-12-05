@@ -9,17 +9,19 @@ def draw_world_position(top_view, position, track_id, color=None):
     top_view = cv2.circle(top_view, (int(position[0]), int(position[1])), 10, color, -1)
     return top_view
 
-def draw_world_positions(top_view, tracks, color=None):
+def draw_world_positions(top_view, tracks, colors):
     for track in tracks:
-        top_view = draw_world_position(top_view, track.xy, track.id, color=color)
+        color_ = getattr(colors, track.label())
+        top_view = draw_world_position(top_view, track.xy, track.id, color=color_)
     return top_view
 
-def draw_vehicle_baseplates(top_view, tracks, scalefactor, color=None, thickness=10):
+def draw_vehicle_baseplates(top_view, tracks, scalefactor, colors, thickness=10):
     for trj in tracks:
+        color_ = getattr(colors, trj.label())
         world_position = (int(trj.xy[0]), int(trj.xy[1]))
         rvec_normed = (trj.rvec_x, trj.rvec_y)
         # Draw in Perspective- and Top-View
-        top_view = draw_world_position(top_view, world_position, trj.id, color)
+        top_view = draw_world_position(top_view, world_position, trj.id, color_)
         try: 
             top_view = draw_vehicle_baseplate(top_view, np.array([[trj.xy[0]], [trj.xy[1]]]), np.array([[rvec_normed[0]], [rvec_normed[1]]]), 4.5, 1.8, scalefactor, thickness=thickness)
         except:

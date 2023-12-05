@@ -280,7 +280,7 @@ class WorldSort(object):
     for trk in reversed(self.trackers):
         d = trk.get_state()
         if (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):  #(trk.time_since_update < 1) and
-          tmp = np.concatenate((d[0], d[1], [trk.id+1], trk.actual_rvec[0], trk.actual_rvec[1], [trk.detection_id]))
+          tmp = np.concatenate((d[0], d[1], [trk.id+1], trk.actual_rvec[0], trk.actual_rvec[1], [trk.detection_id], [trk.tracked_class_id]))
           ret.append(tmp.reshape(1,-1)) # +1 as MOT benchmark requires positive  # <--- add [trk.original_id] to the returned set
         i -= 1
         # remove dead tracklet
@@ -288,4 +288,4 @@ class WorldSort(object):
           self.trackers.pop(i)
     if(len(ret)>0):
       return np.concatenate(ret)
-    return np.empty((0,4))
+    return np.empty((0,5))

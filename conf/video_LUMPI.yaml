@@ -8,6 +8,14 @@ bev:
   homography: '/home/ziegleto/ziegleto/data/5Safe/LUMPI_Measurement1/homography_matrix.json'
   scalefactor: 17.814
 standard_color: [0, 69, 255]
+
+colors:
+  person: [255, 0, 0]
+  bicycle: [0, 255, 0]
+  car: [0, 69, 255]
+  motorcycle: [255, 0, 0]
+  bus: [0, 0, 255]
+  truck: [0, 0, 255]
 dm: 
   is_used: false
   not_intended_paths:

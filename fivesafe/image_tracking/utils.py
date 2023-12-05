@@ -31,9 +31,10 @@ def draw_track(frame, track, draw_detection_id=True, color=None):
     )
     return frame
 
-def draw_tracks(frame, tracks, draw_detection_id=True, color=None):
+def draw_tracks(frame, tracks, colors, draw_detection_id=True):
     for track in tracks:
-        frame = draw_track(frame, track, draw_detection_id=draw_detection_id, color=color)
+        color_ = getattr(colors, track.label())
+        frame = draw_track(frame, track, draw_detection_id=draw_detection_id, color=color_)
     return frame
 
 def draw_debug_tracks(frame, tracks, detections):
