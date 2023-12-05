@@ -7,8 +7,6 @@ bev:
   top_view: '/home/ziegleto/ziegleto/data/5Safe/LUMPI_Measurement1/Refimg.JPG'
   homography: '/home/ziegleto/ziegleto/data/5Safe/LUMPI_Measurement1/homography_matrix.json'
   scalefactor: 17.814
-standard_color: [0, 69, 255]
-
 colors:
   person: [255, 0, 0]
   bicycle: [0, 255, 0]
@@ -17,7 +15,7 @@ colors:
   bus: [0, 0, 255]
   truck: [0, 0, 255]
 dm: 
-  is_used: false
+  is_used: true
   not_intended_paths:
     points:
       pts_int_path_1: [

@@ -5,4 +5,10 @@ detection:
 bev:
   scalefactor: 5
   homography: './conf/homography_matrix.json'
-standard_color: [0, 0, 255]
+colors:
+  person: [255, 0, 0]
+  bicycle: [0, 255, 0]
+  car: [0, 69, 255]
+  motorcycle: [255, 0, 0]
+  bus: [0, 0, 255]
+  truck: [0, 0, 255]

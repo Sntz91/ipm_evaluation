@@ -56,8 +56,8 @@ def start(cfg):
         predicted_world_positions = np.asarray(world_tracks_vehicles.get_world_positions())
         # Draw
         image_pv = draw_detections(image_pv, detections_pv, mask=True)
-        draw_world_positions(image_tv, world_tracks_vehicles, cfg.standard_color) # TODO MAYBE DRAW ERROR LINE
-        draw_tracks(image_pv, image_tracks)
+        draw_world_positions(image_tv, world_tracks_vehicles, cfg.colors) # TODO MAYBE DRAW ERROR LINE
+        draw_tracks(image_pv, image_tracks, cfg.colors)
         # Evaluation scores
         matched_pairs, unmatched_predictions, unmatched_gt = match_points(predicted_world_positions, gt_world_positions)
         print('matched', matched_pairs)
