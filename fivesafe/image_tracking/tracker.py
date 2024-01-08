@@ -1,7 +1,6 @@
 from .sort import Sort
 from . import Tracks
 
-
 class Tracker:
     def __init__(self, img_width, img_height):
         self.mot_tracker = Sort()

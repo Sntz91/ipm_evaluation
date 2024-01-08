@@ -1,0 +1,28 @@
+dataset:
+  top_view_cfg:
+    input_dir:  '/home/ziegleto/ziegleto/data/5Safe/vup/Pedestrian/processed/top_view'
+    labels: '/home/ziegleto/ziegleto/data/5Safe/vup/Pedestrian/processed/top_view/labels.json'
+  perspective_view_cfg:
+    c1:
+        input_dir: '/home/ziegleto/ziegleto/data/5Safe/vup/Pedestrian/processed/camera1'
+        offset_to_top_view: 40
+        labels: '/home/ziegleto/ziegleto/data/5Safe/vup/Pedestrian/processed/camera1/labels.json' 
+    c2:
+      input_dir: '/home/ziegleto/ziegleto/data/5Safe/vup/Pedestrian/processed/camera2'
+      offset_to_top_view: 79
+      labels: '/home/ziegleto/ziegleto/data/5Safe/vup/Pedestrian/processed/camera2/labels.json' 
+  url: '/home/ziegleto/ziegleto/data/5Safe/carla/circle/'
+detection:
+  use_gt: false
+  model: 'yolov8s-seg.pt'
+  classes_of_interest: ['person', 'car', 'bicycle', 'motorcycle', 'truck', 'bus']
+bev:
+  scalefactor: 5
+  homography: './conf/homography_matrix2.json'
+colors:
+  person: [255, 0, 0]
+  bicycle: [0, 255, 0]
+  car: [0, 69, 255]
+  motorcycle: [255, 0, 0]
+  bus: [0, 0, 255]
+  truck: [0, 0, 255]

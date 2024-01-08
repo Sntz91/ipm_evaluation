@@ -1,5 +1,4 @@
 from fivesafe.datasets.carla import VehicleDataset
-from fivesafe.datasets.vup1.dataset import Dataset
 from fivesafe.object_detection import find_detector_class, draw_detections
 from fivesafe.image_tracking import Tracker as ImageTracker, draw_tracks
 from fivesafe.world_tracking import Tracker as WorldTracker
@@ -12,8 +11,6 @@ import yaml
 import cv2
 
 # TODO Iou? dann brauchen wir aber auch perspective view maske. 
-
-# TODO Wie laeuft das mit den vehicle_gt_id?!
 
 def count_identity_switches(track_vehicle_correspondences):
     n_identity_switches = 0
@@ -30,7 +27,7 @@ def count_identity_switches(track_vehicle_correspondences):
     return n_identity_switches, identity_switches
 
 def start(cfg):
-    dataset = Dataset(cfg.dataset.top_view_cfg, cfg.dataset.perspective_view_cfg)
+    dataset = VehicleDataset(cfg.dataset.url)
     h, w, _ = dataset.get_image_size()
     if not cfg.detection.use_gt:
         model = YOLO(cfg.detection.model)
@@ -50,8 +47,8 @@ def start(cfg):
     n_not_detected = 0
 
     for (image_pv, image_tv), (vehicles_pv, vehicles_tv) in dataset:
-        vehicles_pv = vehicles_pv[1] # only cam 2 at first
-        image_pv = image_pv[1]
+        print(vehicles_pv)
+        print(vehicles_tv)
         if cfg.detection.use_gt:
             detections_pv = dataset.get_gt_detections(vehicles_pv)
         else:
@@ -61,7 +58,7 @@ def start(cfg):
         world_tracks_vrus, world_tracks_vehicles = world_tracker.track(image_tracks_transformed)
         
         # Matching TODO world_tracks vrus merged into vehicles again
-        for track in world_tracks_vrus:
+        for track in world_tracks_vehicles:
             corresponding_detection = detections_pv[track.detection_id-1]
             # IF NO CORRESPONDING DETECTION, then what? Count, you will get them as false negatives anyways
             if not corresponding_detection:
@@ -71,11 +68,10 @@ def start(cfg):
             track_vehicle_correspondences[track.id].append(corresponding_detection.vehicle_gt_id)
 
         gt_world_positions = np.asarray(dataset.get_gcps(vehicles_tv))
-        predicted_world_positions = np.asarray(world_tracks_vrus.get_world_positions())
-        print(predicted_world_positions)
+        predicted_world_positions = np.asarray(world_tracks_vehicles.get_world_positions())
         # Draw
         image_pv = draw_detections(image_pv, detections_pv, mask=True)
-        draw_world_positions(image_tv, world_tracks_vrus, cfg.colors) # TODO MAYBE DRAW ERROR LINE
+        draw_world_positions(image_tv, world_tracks_vehicles, cfg.colors) # TODO MAYBE DRAW ERROR LINE
         draw_tracks(image_pv, image_tracks, cfg.colors)
         # Evaluation scores
         matched_pairs, unmatched_predictions, unmatched_gt = match_points(predicted_world_positions, gt_world_positions)
@@ -110,7 +106,7 @@ def start(cfg):
 
 
 if __name__=='__main__':
-    cfg_name = './conf/vup1_dataset.yaml'
+    cfg_name = './conf/carla_dataset.yaml'
     with open (cfg_name, 'r') as file:
         cfg = yaml.safe_load(file)
         cfg = Dict2ObjParser(cfg).parse()

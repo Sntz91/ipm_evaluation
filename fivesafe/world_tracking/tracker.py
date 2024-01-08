@@ -18,13 +18,13 @@ class Tracker:
             if track.label_id in [2, 3, 5, 7]: 
                 dets_world_vehicles = np.append(
                         dets_world_vehicles, 
-                        np.array([[track.xy_world[0], track.xy_world[1], track.label_id, track.detection_id]]),
+                        np.array([[track.xy[0], track.xy[1], track.label_id, track.detection_id]]),
                         axis=0
                 )
             else:
                 dets_world_vrus = np.append(
                         dets_world_vrus, 
-                        np.array([[track.xy_world[0], track.xy_world[1], track.label_id, track.detection_id]]), 
+                        np.array([[track.xy[0], track.xy[1], track.label_id, track.detection_id]]), 
                         axis=0
                 )
         trjs_vehicles = self.world_tracker_vehicles.update(dets_world_vehicles)

@@ -337,7 +337,7 @@ class PositionEstimation:
         for track in tracks:
             mask = detections[track.detection_id-1].mask
             world_position, psi_world, gcp_img = self.map_entity_and_return_relevant_points(track, mask)
-            track.xy_world = (world_position[0], world_position[1])
+            track.xy = (world_position[0], world_position[1])
         return tracks
 
 

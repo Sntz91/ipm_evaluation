@@ -2,3 +2,5 @@
 **/yolov8s-seg.pt
 **/__pycache__/**
 **/.ipynb_checkpoints/**
+fivesafe/utilities/LightGlue/**
+fivesafe/utilities/LightGlue
