@@ -3,7 +3,7 @@ dataset:
 detection:
   use_gt: true
 bev:
-  scalefactor: 5
+  scalefactor: 16
   homography: './conf/homography_matrix.json'
 colors:
   person: [255, 0, 0]

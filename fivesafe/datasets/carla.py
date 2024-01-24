@@ -7,7 +7,7 @@ import torch
 import os
 
 class VehicleDataset(Dataset):
-    def __init__(self, base_url, transform=None, target_transform=None):
+    def __init__(self, base_url, transform=None, target_transform=None, skip=5):
         # read annotation file
         self.base_url = base_url
         self.transform = transform
@@ -22,12 +22,17 @@ class VehicleDataset(Dataset):
         with open(tv_path, 'rb') as handle:
             self.data_tv = pickle.load(handle)
 
+        self.skip = skip
         assert len(self.data_pv) == len(self.data_tv), 'tv pv not same length?'
 
     def __len__(self):
-        return len(self.data_pv)-2
+        return len(self.data_pv)
 
     def __getitem__(self, idx):
+        #print(idx)
+        #print(len(self))
+        idx = idx+self.skip
+        if idx+1 >= len(self): raise IndexError
         idx = idx+1 
         label_pv = self.data_pv[idx]
         label_tv = self.data_tv[idx]

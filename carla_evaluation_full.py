@@ -47,8 +47,6 @@ def start(cfg):
     n_not_detected = 0
 
     for (image_pv, image_tv), (vehicles_pv, vehicles_tv) in dataset:
-        print(vehicles_pv)
-        print(vehicles_tv)
         if cfg.detection.use_gt:
             detections_pv = dataset.get_gt_detections(vehicles_pv)
         else:
@@ -85,6 +83,7 @@ def start(cfg):
         for pair in matched_pairs:
             error = calculate_euclidean_distance(pair[0], pair[1], scaling_factor=cfg.bev.scalefactor)
             errors_per_frame.append(error)
+        print("errors: ", errors_per_frame)
         errors_per_ts_per_frame.append(errors_per_frame)
         cv2.imshow('pv', image_pv)
         cv2.imshow('tv', image_tv)

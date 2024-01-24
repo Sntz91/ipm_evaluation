@@ -1,9 +1,16 @@
 from torch.utils.data import Dataset
 from ...utilities import Dict2ObjParser
+from ...object_detection import Detections, Detection_w_mask
 import yaml
 import json
 import cv2
 import os
+import numpy as np
+
+def bb_to_2d(bb):
+    x_min, x_max = np.min(bb[:, 0]), np.max(bb[:, 0])
+    y_min, y_max = np.min(bb[:, 1]), np.max(bb[:, 1])
+    return x_min, y_min, x_max, y_max
 
 class Dataset(Dataset):
     def __init__(self, top_view_cfg, perspective_views_cfg):
@@ -16,13 +23,6 @@ class Dataset(Dataset):
     def get_image_size(self):
         return 1002, 1920, 3 # TODO
     
-    @staticmethod
-    def get_gcps(objects: dict):
-        gcps = []
-        for id, obj in objects.items():
-            gcps.append([obj['x'], obj['y']])
-        return gcps
-
     def __getitem__(self, idx):
         """ 
         Returns 

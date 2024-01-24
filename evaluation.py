@@ -92,7 +92,7 @@ def start(cfg):
         errors_per_ts_per_frame.append(errors_per_frame)
         cv2.imshow('pv', image_pv)
         cv2.imshow('tv', image_tv)
-        if cv2.waitKey(0) == ord('q'):
+        if cv2.waitKey(1) == ord('q'):
             break
 
     errors_per_ts_per_frame = np.asarray(errors_per_ts_per_frame)

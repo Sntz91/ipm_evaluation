@@ -1,366 +1,182 @@
-import json
 import numpy as np
-import cv2 as cv
-import matplotlib.pyplot as plt
-from math import sin, cos
+import json
+import cv2
+from math import cos, sin
 
-def show_one_image(img1, i):
-    plt.imshow(img1)
-    plt.title("Frame" + str(i))
-    plt.draw()
-    while True:
-        if plt.waitforbuttonpress(0):
-            plt.close()
-            break
+# TODO Test Pedestrians etc. also
 
+SHIFT_DICT = {
+    "person": [0, 0],
+    "bicycle": [0.3, 0.3],
+    "motorcycle": [0.3, 0.3],
+    "car": [2.0, 0.8],
+    "van": [1.1, 1.1],
+    "truck": [5.0, 1.3],
+    "bus": [5.0, 1.5]
+}
+        
 class PositionEstimation:
-    def check_aspect_ratio_for_high_bb(self):
-        box = self.min_rect_points
-        sort_order_x = box[:, 0].argsort()[::-1]
-        sort_order_y = box[:, 1].argsort()[::-1]
+    def __init__(self, H_fname: str, scale_factor: float) -> None:
+        with open(H_fname, 'r') as file:
+            self.H = np.array(json.load(file))
+        self.scale_factor = scale_factor
 
-        x_min = box[sort_order_x[-1]]
-        x_max = box[sort_order_x[0]]
-
-        y_min = box[sort_order_y[-1]]
-        y_max = box[sort_order_y[0]]
-
-        x = x_max[0] - x_min[0]
-        y = y_max[1] - y_min[1]
-
-        if x > y:
-            return False
-        if y >= x:
-            return True
-        else:
-            raise Exception("Aspect Ratio Checker Failed! Please check Constraints and start Debugging here!")
-
-    def find_bottom_top_edge(self):
-        """
-        Use the rotated bounding box to select two edges, the top and bottom edge of the vehicle
-        In case of an squared bbox, this will be used as base plate
-        """
-        box = self.min_rect_points
-        bottom_edge = np.zeros((2, 2))
-        top_edge = np.zeros((2, 2))
-        unique_x, _ = np.unique(box[:, 0], return_counts=True)
-        unique_y, _ = np.unique(box[:, 1], return_counts=True)
-        is_square = False
-
-        if self.obj_class != "person" or self.obj_class != "bicycle":
-            self.high_bb_flag = self.check_aspect_ratio_for_high_bb()
-
-
-
-            #if len(box) == 4 and len(unique_x) > 2 and len(unique_y) > 2:
-            # Sort points by y coordinate
-            sort_order = box[:, 1].argsort()[::-1]
-            # Select highest y coordinate
-            index_highest_y_coordinate = sort_order[0]
-            bottom_vertice_candidate_0 = box[(index_highest_y_coordinate - 1) % 4]
-            bottom_vertice_candidate_1 = box[(index_highest_y_coordinate + 1) % 4]
-            top_edge[0] = box[(index_highest_y_coordinate + 2) % 4]
-
-            sort_by_y_desc = box[sort_order]
-            #  This point is guranted part of the bottom edge of a object
-            bottom_vertice_0 = sort_by_y_desc[0]
-            bottom_edge[0] = bottom_vertice_0
-            candidate_length_0 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_0)
-            candidate_length_1 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_1)
-            if not self.high_bb_flag:
-                if candidate_length_0 > candidate_length_1:
-                    bottom_edge[1] = bottom_vertice_candidate_0
-                    top_edge[1] = bottom_vertice_candidate_1
-                else:
-                    bottom_edge[1] = bottom_vertice_candidate_1
-                    top_edge[1] = bottom_vertice_candidate_0
-            else:
-                if candidate_length_0 > candidate_length_1:
-                    bottom_edge[1] = bottom_vertice_candidate_1
-                    top_edge[1] = bottom_vertice_candidate_0
-                else:
-                    bottom_edge[1] = bottom_vertice_candidate_0
-                    top_edge[1] = bottom_vertice_candidate_1
-        else:
-            sort_order = box[:, 1].argsort()[::-1]
-            # Select highest y coordinate
-            index_highest_y_coordinate = sort_order[0]
-            sort_by_y_desc = box[sort_order]
-            #  This point is guranted part of the bottom edge of a object
-            bottom_vertice_0 = sort_by_y_desc[0]
-            bottom_edge[0] = bottom_vertice_0
-            bottom_edge[1] = sort_by_y_desc[0]
-
-        """
-        else:
-            
-            ### My Case ###
-            is_square = True
-            # Sort points by y coordinate
-            sort_order = box[:, 1].argsort()[::-1]
-            # Select highest y coordinate
-            index_highest_y_coordinate = sort_order[0]
-            bottom_vertice_candidate_0 = box[(index_highest_y_coordinate - 1) % 4]
-            bottom_vertice_candidate_1 = box[(index_highest_y_coordinate + 1) % 4]
-            top_edge[0] = box[(index_highest_y_coordinate + 2) % 4]
-
-            sort_by_y_desc = box[sort_order]
-            #  This point is guranted part of the bottom edge of a object
-            bottom_vertice_0 = sort_by_y_desc[0]
-            print(bottom_vertice_0)
-            bottom_edge[0] = bottom_vertice_0
-            candidate_length_0 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_0)
-            candidate_length_1 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_1)
-            if candidate_length_0 > candidate_length_1:
-                bottom_edge[1] = bottom_vertice_candidate_0
-                top_edge[1] = bottom_vertice_candidate_1
-            else:
-                bottom_edge[1] = bottom_vertice_candidate_1
-                top_edge[1] = bottom_vertice_candidate_0
-            
-            
-            if len(unique_y) == 2:
-                # Sort by y-coordinates
-                sort_order = box[:, 1].argsort()[::-1]
-                # select first
-                index_highest_y_coordinate = sort_order[0]
-                sort_by_y_desc = box[sort_order]
-                #  This point is guaranteed part of the bottom edge of a object
-                bottom_vertice_0 = sort_by_y_desc[0]
-                vertice1 = sort_by_y_desc[1]
-                vertice2 = sort_by_y_desc[2]
-                vertice3 = sort_by_y_desc[3]
-                if bottom_vertice_0[0] == vertice2[0]:
-                    length_vector_1 = np.linalg.norm(vertice2 - bottom_vertice_0)
-                else:
-                    length_vector_1 = np.linalg.norm(vertice3 - bottom_vertice_0)
-
-                length_y_vector = np.linalg.norm(vertice1 - bottom_vertice_0)
-
-                if length_y_vector > length_vector_1:
-                    if bottom_vertice_0[0] < vertice1[0]:
-                        bottom_edge[0] = vertice1
-                        bottom_edge[1] = bottom_vertice_0
-                    else:
-                        bottom_edge[0] = bottom_vertice_0
-                        bottom_edge[1] = vertice1
-                    top_edge[0] = vertice2
-                    top_edge[1] = vertice3
-                    is_square = False
-            """
-        return np.asarray(bottom_edge, dtype=np.float32), np.asarray(top_edge, dtype=np.float32), is_square
-    
-    def get_min_rect_points(self):
-        point_array = np.array(self.instance_pts)
-        min_rect = cv.minAreaRect(np.float32(point_array))
-        min_rect_points = cv.boxPoints(min_rect)
-        angle_bb = min_rect[2]
-        min_rect_points = np.int32(min_rect_points)
-        return min_rect_points
-
-    def find_ground_contact_line(self):
-        bottom_points, top_points, is_square = self.find_bottom_top_edge()
-        return bottom_points
-
-    def move_ground_contact_points_by_bb_coordinates(self):
-        for point in self.ground_contact_points_image:
-            point[0] = point[0] + self.bb_coordinates[1] - self.bb_coordinates[3]
-            point[1] = point[1] + self.bb_coordinates[0]
-
-    def transform_ground_contact_points_from_image_to_world(self):
-        warped_points_list = list()
-        for point in self.ground_contact_points_image:
-            point_new = [point[0], point[1], 1]
-            warped_point = np.matmul(self.Homography_Matrix, point_new)
-            scaling = 1 / warped_point[2]
-
-            warped_point[1] = warped_point[1] * scaling
-            warped_point[2] = warped_point[2] * scaling
-            warped_point[0] = warped_point[0] * scaling
-            warped_points_list.append(warped_point)
-        np.asarray(warped_points_list, dtype=np.float32)
-        return warped_points_list
-
-    def find_and_rotate_rvec_of_bottom_straight_by_degree(self, rotation_angle):
-        point1_straight = self.ground_contact_points_world[0]
-        point2_straigth = self.ground_contact_points_world[1]
-        rvec_straight = np.array([[point2_straigth[0] - point1_straight[0]],
-                                            [point2_straigth[1] - point1_straight[1]]], dtype=np.float32)
-        rvec_straight = np.array([[(point2_straigth[0] - point1_straight[0]) / np.linalg.norm(rvec_straight)],
-                                            [(point2_straigth[1] - point1_straight[1]) / np.linalg.norm(rvec_straight)]], dtype=np.float32)
-        
-        #print("Rvec" + str(rvec_straight))
-        
-        if rvec_straight[0] < 0:
-            rvec_straight[0] = rvec_straight[0] * -1
-            rvec_straight[1] = rvec_straight[1] * -1
-        
-        #print("Rvec" + str(rvec_straight))
-        rotation_angle = np.deg2rad(rotation_angle)
-        rot_mat = np.array([[cos(rotation_angle), sin(rotation_angle)],
-                           [-sin(rotation_angle), cos(rotation_angle)]], dtype=np.float32)
-        
-        rvec_straight_rotated = np.matmul(rot_mat, rvec_straight)
-        self.rvec_base = rvec_straight
-        return rvec_straight_rotated
-
-    def calc_midpoint_from_two_points(self):
-        pt1 = self.ground_contact_points_world[0]
-        pt2 = self.ground_contact_points_world[1]
-        new_x = (pt1[0] + pt2[0]) / 2
-        new_y = (pt1[1] + pt2[1]) / 2
-        point = [new_x, new_y]
-        return point
-
-    def shift_point_by_rvec_and_object_class(self):
-        point = self.ground_contact_point_world
-        rvec = self.rotated_rvec
-        if self.obj_class == "person":
-            length = 0
-        elif self.obj_class == "bicycle":
-            length = 0.3
-        elif self.obj_class == "motorcycle":
-            length = 0.3
-        elif self.obj_class == "car" and self.high_bb_flag:
-            length = 1.2
-        elif self.obj_class == "car" and not self.high_bb_flag:
-            length = 2.4
-        elif self.obj_class == "van":
-            length = 1.1
-        elif self.obj_class == "truck":
-            length = 1.3
-        elif self.obj_class == "bus":
-            length = 1.5
-        else:
-            raise Exception("Error. Object Class is not known by Module. Check Message from Object Detector!!!")
-        length = self.scale_factor * length
-        shifted_point_x = point[0] + rvec[0] * length
-        shifted_point_y = point[1] + rvec[1] * length
-        shifted_point = [shifted_point_x, shifted_point_y]
-        return shifted_point
-    
-    def transform_point_from_world_to_image(self, point):
-        point = [point[0], point[1], np.array([[1]], dtype=np.float32)]
-        warped_point = np.matmul(self.inv_Homography_Matrix, np.array([point[0].item(), point[1].item(), 1]))
-        scaling = 1 / warped_point[2]
-
-        warped_point[1] = warped_point[1] * scaling
-        warped_point[2] = warped_point[2] * scaling
-        warped_point[0] = warped_point[0] * scaling
-        np.asarray(warped_point, dtype=np.float32)
-        return warped_point
-
-    def read_convex_hull_message_for_one_instance(self, message_dict):
-        self.obj_id = message_dict["Object_ID"]
-        self.probability = message_dict["Probability"]
-        self.bb_coordinates = message_dict["Position_BBox"]
-        self.obj_class = message_dict["Class"]
-        self.entitiy_mask_img = message_dict["Instance_Mask"]
-
-        if not self.obj_id:
-            raise Exception("Message for Instance was not read correctrly or is corrupt! Check Input. Calculation not possible!")
-        
-
-    def calculate_ground_contact_point_for_one_instance(self):
-        # With Convex Hull
-        if self.obj_class != "person":
-            self.instance_pts = self.entitiy_mask_img
-            self.min_rect_points = self.get_min_rect_points()
-            self.ground_contact_points_image = self.find_ground_contact_line()
-            self.ground_contact_points_world = self.transform_ground_contact_points_from_image_to_world()
-            self.rotated_rvec = self.find_and_rotate_rvec_of_bottom_straight_by_degree(90)
-            self.ground_contact_point_world = self.calc_midpoint_from_two_points()
-            self.shifted_candidate_1 = self.shift_point_by_rvec_and_object_class()
-            self.rotated_rvec = self.find_and_rotate_rvec_of_bottom_straight_by_degree(-90)
-            self.ground_contact_point_world = self.calc_midpoint_from_two_points()
-            self.shifted_candidate_2 = self.shift_point_by_rvec_and_object_class()
-            self.shifted_candidate_1_image = self.transform_point_from_world_to_image(self.shifted_candidate_1)
-            self.shifted_candidate_2_image = self.transform_point_from_world_to_image(self.shifted_candidate_2)
-            if self.shifted_candidate_1_image[1] < self.shifted_candidate_2_image[1]:
-                self.shifted_ground_contact_point_world = self.shifted_candidate_1
-            else:
-                self.shifted_ground_contact_point_world = self.shifted_candidate_2
-        else:
-            self.ground_contact_points_image = [[self.bb_coordinates[0], self.bb_coordinates[1] + self.bb_coordinates[3], self.bb_coordinates[0]+0.5*self.bb_coordinates[2]]]
-            self.ground_contact_points_world = self.transform_ground_contact_points_from_image_to_world()
-            self.shifted_ground_contact_point_world = self.ground_contact_points_world[0]
-
-    def generate_output_message_for_one_instance(self):
-        output_dict = dict()
-        output_dict["Object_ID"] = self.obj_id
-        output_dict["Class"] = self.obj_class
-        output_dict["Probability"] = self.probability
-        output_dict["Position_World"] = self.shifted_ground_contact_point_world
-        output_dict["Color_Hist"] = self.color_hist
-        return output_dict
-
-    def __init__(self, h_fname, scale_factor):
-            H_file = open(h_fname)
-            H = json.load(H_file)
-            H = np.array(H)
-            self.Homography_Matrix = H
-            self.Homography_Matrix = H
-            self.inv_Homography_Matrix = np.linalg.inv(self.Homography_Matrix)
-            self.scale_factor = scale_factor
-            self.obj_id = None
-            self.obj_class = None
-            self.probability = None
-            self.bb_coordinates = None
-            self.color_hist = None
-            self.entitiy_mask_img = None
-            self.bb_coordinates = None
-            self.instance_pts = None
-            self.min_rect_points = None
-            self.ground_contact_points_image = None
-            self.ground_contact_points_world = None
-            self.rvec_base = None
-            self.rotated_rvec = None
-            self.ground_contact_point_world = None
-            self.shifted_ground_contact_point_world = None
-            self.high_bb_flag = None
-
-    def map_entity_and_return_relevant_points(self, track, mask):
-        self.obj_id = track.id
-        self.probability = track.score
-        self.bb_coordinates = track.xywh()
-        self.obj_class = track.label()
-        self.entitiy_mask_img = mask
-        self.calculate_ground_contact_point_for_one_instance()
-
-        pt = self.shifted_ground_contact_point_world
-        pt_new = (pt[0].item(), pt[1].item())
-
-        #return pt_new, self.rotated_rvec, self.ground_contact_points_image, self.shifted_candidate_1_image, self.shifted_candidate_2_image, self.ground_contact_points_world
-        return pt_new, self.rotated_rvec, self.ground_contact_points_image
-    
     def transform(self, tracks, detections):
+        """ Main Function Call for Fivesafe application. Calculate GCP for every track. """
         for track in tracks:
             mask = detections[track.detection_id-1].mask
-            world_position, psi_world, gcp_img = self.map_entity_and_return_relevant_points(track, mask)
+            #world_position, psi_world, gcp_img = self.inverse_perspective_mapping(track, mask)
+            world_position = self.calculate_ground_contact_point(track.label(), mask)
             track.xy = (world_position[0], world_position[1])
         return tracks
-
-
-
-def map_entity_and_return_relevant_points(message, H_camera):
-
-    pos_est = PositionEstimation(H_camera, scale_factor=81/5)
-    pos_est.read_message_for_one_instance(message)
-    pos_est.calculate_ground_contact_point_for_one_instance()
-   
-    return pos_est.shifted_ground_contact_point_world, pos_est.rotated_rvec
-
-
-if __name__ == "__main__":
-    #Load Homography Martix (Matrix is Camera1 from VUP)
-    H_camera = np.array([[-0.49445957900116777, -5.336843794679957, 2379.3416459890864], [-0.16617068412336772, -5.121305806291713, 2611.6303323652387], [-5.200759353906408e-05, -0.002518799679750125, 1.0]])
     
-    # Messages
-    message_dict = dict()
+    def transform_w_rotated_bbox(self, tracks, rotated_bbox):
+        pass
 
-    for message in message_dict:
-        gp_world = map_entity_and_return_relevant_points(message, H_camera)
+    def calculate_ground_contact_point(self, obj_class, mask):
+        """ Calculate Ground Contact Point """
+        if obj_class in ('zperson', 'zbicycle'):
+            return self._calculate_gcp_midpoint()
+        else:
+            rotated_bbox = self._get_rotated_bbox(mask)
+            bottom_edge_img, top_edge_img = self._find_bottom_top_edge(rotated_bbox)
+            bottom_edge_world = self._transform_pts_image_to_world(bottom_edge_img)
+            top_edge_world = self._transform_pts_image_to_world(top_edge_img)
+            shift_vector_1 = self._get_norm_rotated_vector(bottom_edge_world, 90)
+            shift_vector_2 = self._get_norm_rotated_vector(bottom_edge_world, -90)
+            non_shifted_gcp = self._get_midpoint_from_edge(bottom_edge_world)
+            shifted_gcp_c1 = self._shift_point_by_rvec_and_object_class(non_shifted_gcp, shift_vector_1, obj_class, rotated_bbox)
+            shifted_gcp_c2 = self._shift_point_by_rvec_and_object_class(non_shifted_gcp, shift_vector_2, obj_class, rotated_bbox)
+            shifted_gcp_c1_image = self._transform_pts_world_to_img(shifted_gcp_c1)
+            shifted_gcp_c2_image = self._transform_pts_world_to_img(shifted_gcp_c2)
+            if shifted_gcp_c1_image[0][1] < shifted_gcp_c2_image[0][1]:
+                return shifted_gcp_c1[0]
+            return shifted_gcp_c2[0]
 
-
-
+    def _calculate_gcp_midpoint(self, bb):
+        """ 
+            Calculate GCP for Person. 
+            It's the mid of the bottom edge of Bounding Box. 
+        """
+        gcp_img = np.array([bb[0], bb[1] + bb[3], bb[0]+0.5*bb[2]])
+        gcp_world = self._transform_pts_image_to_world(gcp_img)
+        return gcp_world
     
+    def _find_bottom_top_edge(self, rotated_bbox: np.ndarray) -> tuple:
+        """ 
+        Find Bottom and Top Edge 
+        Case 1: BBox is wider then high: Find further point to ref pt as bottom edge
+        Case 2: BBox is higher then wide: Find closer point to ref pt as bottom edge
+        """
+        # Find Indices for Bottom- and Top Edge of Vehicle
+        min_max_fn = np.argmin if self._is_bb_higher_than_wide(rotated_bbox) else np.argmax
+        idx_bottom_vertex_1 = self._get_idx_bottom_vertex_1(
+            rotated_bbox
+        )
+        idx_bottom_vertex_2 = self._get_idx_bottom_vertex_2(
+            rotated_bbox, 
+            idx_bottom_vertex_1,
+            min_max_fn
+        )
+        idx_top_vertex_1, idx_top_vertex_2 = self._find_top_edge(idx_bottom_vertex_1, idx_bottom_vertex_2)
+        # Get Values
+        bottom_vertex_1 = rotated_bbox[idx_bottom_vertex_1]
+        bottom_vertex_2 = rotated_bbox[idx_bottom_vertex_2]
+        top_vertex_1 = rotated_bbox[idx_top_vertex_1]
+        top_vertex_2 = rotated_bbox[idx_top_vertex_2]
+        return np.array([bottom_vertex_1, bottom_vertex_2]), np.array([top_vertex_1, top_vertex_2])
+
+    def _get_idx_bottom_vertex_1(self, rotated_bbox: np.ndarray) -> int:
+        """ Get the Maximum y-value (the lowest point in image) """
+        return np.argmax(rotated_bbox[:, 1])
+    
+    def _get_idx_bottom_vertex_2(self, rotated_bbox, idx_bottom_vertex_1, min_max_fn=np.argmax) -> int:
+        """ Get the neighbouring point furthest away of vertex 1 """
+        candidates = self._get_idx_neighbour_vertices(idx_bottom_vertex_1)
+        lengths = self._get_neighbour_lengths(
+            rotated_bbox, 
+            idx_bottom_vertex_1, 
+            candidates
+        )
+        return candidates[min_max_fn(lengths)]
+    
+    def _find_top_edge(self, idx_bottom_vertex_1, idx_bottom_vertex_2):
+        """ Use the remaining points """
+        idxs = {0, 1, 2, 3}
+        return idxs - {idx_bottom_vertex_1, idx_bottom_vertex_2}
+
+    def _get_idx_neighbour_vertices(self, ref_vertex_idx: int, bbox_len:int=4) -> list[int]:
+        """ Get the neigbouring vertices of a point """
+        candidates = [(ref_vertex_idx-1) % bbox_len, (ref_vertex_idx+1) % bbox_len]
+        return candidates
+
+    def _get_neighbour_lengths(self, 
+        rotated_bbox: np.ndarray, 
+        idx_ref_vertex: int, 
+        idx_neighbours: list[int]
+    ) -> list:
+        """ Get the lenghts of ref point to neighbouring points """
+        return [np.linalg.norm(rotated_bbox[idx_ref_vertex] - rotated_bbox[neighbour]) 
+                for neighbour in idx_neighbours]
+
+    def _is_bb_higher_than_wide(self, rotated_bbox: np.ndarray) -> bool:
+        """ Check if Bounding Box is wider than high """
+        # Like MARCEL, not sure why?
+        idx_x_min, idx_x_max = np.argmin(rotated_bbox[:, 0]), np.argmax(rotated_bbox[:, 0])
+        idx_y_min, idx_y_max = np.argmin(rotated_bbox[:, 1]), np.argmax(rotated_bbox[:, 1])
+        width = rotated_bbox[idx_x_max][0] - rotated_bbox[idx_x_min][0]
+        height = rotated_bbox[idx_y_max][1] - rotated_bbox[idx_y_min][1]
+        return False if width > height else True
+
+    def _shift_point_by_rvec_and_object_class(self, non_shifted_gcp, rvec, obj_class, rotated_bbox):
+        lengths = SHIFT_DICT[obj_class]
+        chosen_entry = 0 if self._is_bb_higher_than_wide(rotated_bbox) else 1
+        length = lengths[chosen_entry]
+        length = self.scale_factor * length
+        shifted_gcp = non_shifted_gcp + rvec * length
+        return np.expand_dims(shifted_gcp, axis=0)
+
+    def _transform_pts_world_to_img(self, pts_world: np.ndarray) -> np.ndarray:
+        """ Transform point from 3D world to 2D Image Coordinates (Z=0) """
+        homogeneous_c = np.ones((pts_world.shape[0], 1))
+        pts_world = np.hstack((pts_world, homogeneous_c))
+        pts_world = np.linalg.inv(self.H) @ pts_world.T
+        pts_world = pts_world / pts_world[2]
+        return pts_world[:-1].T
+
+    def _transform_pts_image_to_world(self, pts_img: np.ndarray) -> np.ndarray:
+        """ Transform point from 2D image to 3D World Coordinates (Z=0) """
+        homogeneous_c = np.ones((pts_img.shape[0], 1))
+        pts_img = np.hstack((pts_img, homogeneous_c))
+        pts_world = self.H @ pts_img.T
+        pts_world = pts_world / pts_world[2]
+        return pts_world[:-1].T
+
+    def _get_norm_rotated_vector(self, bottom_edge, degree):
+        """ Get Vector between two points and move it by certain degree """
+        theta = np.deg2rad(degree)
+        rotation_matrix = np.array([
+            [cos(theta), sin(theta)],
+            [-sin(theta), cos(theta)]
+        ], dtype=np.float32)
+        vector = bottom_edge[1] - bottom_edge[0] 
+        vector_norm = vector / np.linalg.norm(vector)
+        if vector_norm[0] < 0: # WHY?
+            vector_norm = vector_norm * -1
+        rotated_vector = rotation_matrix@vector_norm
+        return rotated_vector
+
+    def _get_midpoint_from_edge(self, edge: np.ndarray) -> np.ndarray:
+        """ Return Midpoint of edge (two points) """
+        midpoint_x = (edge[0][0] + edge[1][0]) / 2
+        midpoint_y = (edge[0][1] + edge[1][1]) / 2
+        return np.array([midpoint_x, midpoint_y])
+
+    # Maybe this should be in utils (NOT JUST THIS.)
+    def _get_rotated_bbox(self, mask):
+        """ Given a mask, return rotated BBOX """
+        min_rect = cv2.minAreaRect(np.array(mask))
+        angle_bb = min_rect[2]
+        min_rect_pts = cv2.boxPoints(min_rect)
+        min_rect_pts = np.int0(min_rect_pts)
+        return min_rect_pts

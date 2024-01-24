@@ -14,11 +14,26 @@ def show_one_image(img1, i):
             break
 
 class PositionEstimation:
+    def check_aspect_ratio_for_high_bb(self):
+        box = self.min_rect_points
+        sort_order_x = box[:, 0].argsort()[::-1]
+        sort_order_y = box[:, 1].argsort()[::-1]
 
-    def transform_point(self, pt):
-        world_position = np.matmul(self.Homography_Matrix, np.array([pt[0], pt[1], 1]))
-        return world_position / world_position[2]
+        x_min = box[sort_order_x[-1]]
+        x_max = box[sort_order_x[0]]
 
+        y_min = box[sort_order_y[-1]]
+        y_max = box[sort_order_y[0]]
+
+        x = x_max[0] - x_min[0]
+        y = y_max[1] - y_min[1]
+
+        if x > y:
+            return False
+        if y >= x:
+            return True
+        else:
+            raise Exception("Aspect Ratio Checker Failed! Please check Constraints and start Debugging here!")
 
     def find_bottom_top_edge(self):
         """
@@ -30,12 +45,16 @@ class PositionEstimation:
         top_edge = np.zeros((2, 2))
         unique_x, _ = np.unique(box[:, 0], return_counts=True)
         unique_y, _ = np.unique(box[:, 1], return_counts=True)
-
         is_square = False
 
-        if len(box) == 4 and len(unique_x) > 2 and len(unique_y) > 2:
+        if self.obj_class != "person" or self.obj_class != "bicycle":
+            self.high_bb_flag = self.check_aspect_ratio_for_high_bb()
+
+
+
+            #if len(box) == 4 and len(unique_x) > 2 and len(unique_y) > 2:
             # Sort points by y coordinate
-            sort_order = box[:, 0].argsort()[::-1]
+            sort_order = box[:, 1].argsort()[::-1]
             # Select highest y coordinate
             index_highest_y_coordinate = sort_order[0]
             bottom_vertice_candidate_0 = box[(index_highest_y_coordinate - 1) % 4]
@@ -48,18 +67,37 @@ class PositionEstimation:
             bottom_edge[0] = bottom_vertice_0
             candidate_length_0 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_0)
             candidate_length_1 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_1)
-            if candidate_length_0 > candidate_length_1:
-                bottom_edge[1] = bottom_vertice_candidate_0
-                top_edge[1] = bottom_vertice_candidate_1
+            if not self.high_bb_flag:
+                if candidate_length_0 > candidate_length_1:
+                    bottom_edge[1] = bottom_vertice_candidate_0
+                    top_edge[1] = bottom_vertice_candidate_1
+                else:
+                    bottom_edge[1] = bottom_vertice_candidate_1
+                    top_edge[1] = bottom_vertice_candidate_0
             else:
-                bottom_edge[1] = bottom_vertice_candidate_1
-                top_edge[1] = bottom_vertice_candidate_0
+                if candidate_length_0 > candidate_length_1:
+                    bottom_edge[1] = bottom_vertice_candidate_1
+                    top_edge[1] = bottom_vertice_candidate_0
+                else:
+                    bottom_edge[1] = bottom_vertice_candidate_0
+                    top_edge[1] = bottom_vertice_candidate_1
+        else:
+            sort_order = box[:, 1].argsort()[::-1]
+            # Select highest y coordinate
+            index_highest_y_coordinate = sort_order[0]
+            sort_by_y_desc = box[sort_order]
+            #  This point is guranted part of the bottom edge of a object
+            bottom_vertice_0 = sort_by_y_desc[0]
+            bottom_edge[0] = bottom_vertice_0
+            bottom_edge[1] = sort_by_y_desc[0]
+
+        """
         else:
             
             ### My Case ###
             is_square = True
             # Sort points by y coordinate
-            sort_order = box[:, 0].argsort()[::-1]
+            sort_order = box[:, 1].argsort()[::-1]
             # Select highest y coordinate
             index_highest_y_coordinate = sort_order[0]
             bottom_vertice_candidate_0 = box[(index_highest_y_coordinate - 1) % 4]
@@ -69,6 +107,7 @@ class PositionEstimation:
             sort_by_y_desc = box[sort_order]
             #  This point is guranted part of the bottom edge of a object
             bottom_vertice_0 = sort_by_y_desc[0]
+            print(bottom_vertice_0)
             bottom_edge[0] = bottom_vertice_0
             candidate_length_0 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_0)
             candidate_length_1 = np.linalg.norm(bottom_vertice_0 - bottom_vertice_candidate_1)
@@ -78,10 +117,11 @@ class PositionEstimation:
             else:
                 bottom_edge[1] = bottom_vertice_candidate_1
                 top_edge[1] = bottom_vertice_candidate_0
-
+            
+            
             if len(unique_y) == 2:
                 # Sort by y-coordinates
-                sort_order = box[:, 0].argsort()[::-1]
+                sort_order = box[:, 1].argsort()[::-1]
                 # select first
                 index_highest_y_coordinate = sort_order[0]
                 sort_by_y_desc = box[sort_order]
@@ -107,6 +147,7 @@ class PositionEstimation:
                     top_edge[0] = vertice2
                     top_edge[1] = vertice3
                     is_square = False
+            """
         return np.asarray(bottom_edge, dtype=np.float32), np.asarray(top_edge, dtype=np.float32), is_square
     
     def get_min_rect_points(self):
@@ -177,9 +218,13 @@ class PositionEstimation:
         if self.obj_class == "person":
             length = 0
         elif self.obj_class == "bicycle":
-            length = 0
-        elif self.obj_class == "car":
+            length = 0.3
+        elif self.obj_class == "motorcycle":
+            length = 0.3
+        elif self.obj_class == "car" and self.high_bb_flag:
             length = 1.2
+        elif self.obj_class == "car" and not self.high_bb_flag:
+            length = 2.4
         elif self.obj_class == "van":
             length = 1.1
         elif self.obj_class == "truck":
@@ -218,22 +263,27 @@ class PositionEstimation:
 
     def calculate_ground_contact_point_for_one_instance(self):
         # With Convex Hull
-        self.instance_pts = self.entitiy_mask_img
-        self.min_rect_points = self.get_min_rect_points()
-        self.ground_contact_points_image = self.find_ground_contact_line()
-        self.ground_contact_points_world = self.transform_ground_contact_points_from_image_to_world()
-        self.rotated_rvec = self.find_and_rotate_rvec_of_bottom_straight_by_degree(90)
-        self.ground_contact_point_world = self.calc_midpoint_from_two_points()
-        self.shifted_candidate_1 = self.shift_point_by_rvec_and_object_class()
-        self.rotated_rvec = self.find_and_rotate_rvec_of_bottom_straight_by_degree(-90)
-        self.ground_contact_point_world = self.calc_midpoint_from_two_points()
-        self.shifted_candidate_2 = self.shift_point_by_rvec_and_object_class()
-        self.shifted_candidate_1_image = self.transform_point_from_world_to_image(self.shifted_candidate_1)
-        self.shifted_candidate_2_image = self.transform_point_from_world_to_image(self.shifted_candidate_2)
-        if self.shifted_candidate_1_image[1] < self.shifted_candidate_2_image[1]:
-            self.shifted_ground_contact_point_world = self.shifted_candidate_1
+        if self.obj_class != "person":
+            self.instance_pts = self.entitiy_mask_img
+            self.min_rect_points = self.get_min_rect_points()
+            self.ground_contact_points_image = self.find_ground_contact_line()
+            self.ground_contact_points_world = self.transform_ground_contact_points_from_image_to_world()
+            self.rotated_rvec = self.find_and_rotate_rvec_of_bottom_straight_by_degree(90)
+            self.ground_contact_point_world = self.calc_midpoint_from_two_points()
+            self.shifted_candidate_1 = self.shift_point_by_rvec_and_object_class()
+            self.rotated_rvec = self.find_and_rotate_rvec_of_bottom_straight_by_degree(-90)
+            self.ground_contact_point_world = self.calc_midpoint_from_two_points()
+            self.shifted_candidate_2 = self.shift_point_by_rvec_and_object_class()
+            self.shifted_candidate_1_image = self.transform_point_from_world_to_image(self.shifted_candidate_1)
+            self.shifted_candidate_2_image = self.transform_point_from_world_to_image(self.shifted_candidate_2)
+            if self.shifted_candidate_1_image[1] < self.shifted_candidate_2_image[1]:
+                self.shifted_ground_contact_point_world = self.shifted_candidate_1
+            else:
+                self.shifted_ground_contact_point_world = self.shifted_candidate_2
         else:
-            self.shifted_ground_contact_point_world = self.shifted_candidate_2
+            self.ground_contact_points_image = [[self.bb_coordinates[0], self.bb_coordinates[1] + self.bb_coordinates[3], self.bb_coordinates[0]+0.5*self.bb_coordinates[2]]]
+            self.ground_contact_points_world = self.transform_ground_contact_points_from_image_to_world()
+            self.shifted_ground_contact_point_world = self.ground_contact_points_world[0]
 
     def generate_output_message_for_one_instance(self):
         output_dict = dict()
@@ -267,6 +317,7 @@ class PositionEstimation:
             self.rotated_rvec = None
             self.ground_contact_point_world = None
             self.shifted_ground_contact_point_world = None
+            self.high_bb_flag = None
 
     def map_entity_and_return_relevant_points(self, track, mask):
         self.obj_id = track.id
@@ -280,7 +331,14 @@ class PositionEstimation:
         pt_new = (pt[0].item(), pt[1].item())
 
         #return pt_new, self.rotated_rvec, self.ground_contact_points_image, self.shifted_candidate_1_image, self.shifted_candidate_2_image, self.ground_contact_points_world
-        return pt_new, self.rotated_rvec
+        return pt_new, self.rotated_rvec, self.ground_contact_points_image
+    
+    def transform(self, tracks, detections):
+        for track in tracks:
+            mask = detections[track.detection_id-1].mask
+            world_position, psi_world, gcp_img = self.map_entity_and_return_relevant_points(track, mask)
+            track.xy = (world_position[0], world_position[1])
+        return tracks
 
 
 

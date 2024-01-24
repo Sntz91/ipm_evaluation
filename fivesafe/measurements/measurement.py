@@ -53,7 +53,7 @@ class Measurement(ABC):
         self, 
         frame: np.ndarray, 
         color=(255, 0, 0),
-        offset=(0, 0)
+        offset=(0, 20)
     ) -> np.ndarray:
         return cv2.putText(
             frame, 
@@ -62,7 +62,7 @@ class Measurement(ABC):
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
             color,
-            1,
+            2,
             cv2.LINE_AA
         )
 

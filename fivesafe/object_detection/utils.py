@@ -5,7 +5,7 @@ def draw_detections(frame, detections, mask=False):
         frame = draw_detection(frame, detection, mask)
     return frame
 
-def draw_detection(frame, detection, mask=False):
+def draw_detection(frame, detection, mask=False, draw_id=True, draw_score=True):
     if mask:
         frame = detection.draw_mask(
             frame,
@@ -17,8 +17,10 @@ def draw_detection(frame, detection, mask=False):
             thickness=2
         )
     frame = detection.draw_label(frame)
-    frame = detection.draw_id(frame)
-    frame = detection.draw_score(frame)
+    if draw_id:
+        frame = detection.draw_id(frame)
+    if draw_score:
+        frame = detection.draw_score(frame)
     return frame
 
 def draw_detection_offset(frame, detection):

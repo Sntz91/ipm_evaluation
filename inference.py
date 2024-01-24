@@ -49,7 +49,7 @@ def start(cap, cfg):
         if cv2.waitKey(1) == ord('q'):
             break
         _, frame = cap.read()
-    cv2.destroyAllWindows
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     run('conf/video_LUMPI.yaml', start, bufferless=False)
