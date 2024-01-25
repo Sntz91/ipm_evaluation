@@ -26,17 +26,17 @@ class PositionEstimation:
         for track in tracks:
             mask = detections[track.detection_id-1].mask
             #world_position, psi_world, gcp_img = self.inverse_perspective_mapping(track, mask)
-            world_position = self.calculate_ground_contact_point(track.label(), mask)
+            world_position = self.calculate_ground_contact_point(track.label(), mask, track.xywh())
             track.xy = (world_position[0], world_position[1])
         return tracks
     
     def transform_w_rotated_bbox(self, tracks, rotated_bbox):
         pass
 
-    def calculate_ground_contact_point(self, obj_class, mask):
+    def calculate_ground_contact_point(self, obj_class, mask, bb):
         """ Calculate Ground Contact Point """
-        if obj_class in ('zperson', 'zbicycle'):
-            return self._calculate_gcp_midpoint()
+        if obj_class in ('person'):
+            return self._calculate_gcp_midpoint(bb)
         else:
             rotated_bbox = self._get_rotated_bbox(mask)
             bottom_edge_img, top_edge_img = self._find_bottom_top_edge(rotated_bbox)
@@ -58,9 +58,9 @@ class PositionEstimation:
             Calculate GCP for Person. 
             It's the mid of the bottom edge of Bounding Box. 
         """
-        gcp_img = np.array([bb[0], bb[1] + bb[3], bb[0]+0.5*bb[2]])
+        gcp_img = np.array([[bb[0], bb[1] + bb[3]]])
         gcp_world = self._transform_pts_image_to_world(gcp_img)
-        return gcp_world
+        return gcp_world[0]
     
     def _find_bottom_top_edge(self, rotated_bbox: np.ndarray) -> tuple:
         """ 
@@ -172,7 +172,6 @@ class PositionEstimation:
         midpoint_y = (edge[0][1] + edge[1][1]) / 2
         return np.array([midpoint_x, midpoint_y])
 
-    # Maybe this should be in utils (NOT JUST THIS.)
     def _get_rotated_bbox(self, mask):
         """ Given a mask, return rotated BBOX """
         min_rect = cv2.minAreaRect(np.array(mask))

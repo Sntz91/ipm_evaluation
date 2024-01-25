@@ -28,13 +28,14 @@ def start(cap, cfg):
         contours_turning_right = dm.get_contours(cfg.dm.turning_right.points) 
         dm.draw_polylines_in_top_view(top_view_org, contours_int_path, color=cfg.dm.not_intended_paths.color)
         dm.draw_polylines_in_top_view(top_view_org, contours_turning_right, color=cfg.dm.turning_right.color)
-
+    i = 0
     # Main Loop
     while True:
         top_view = top_view_org.copy()
         detections = detector.detect(frame)
         image_tracks = image_tracker.track(detections)
         image_tracks_transformed = position_estimator.transform(image_tracks, detections)
+        #print(image_tracks_transformed)
         world_tracks_vrus, world_tracks_vehicles = world_tracker.track(image_tracks_transformed)
         top_view = draw_world_positions(top_view, world_tracks_vrus, cfg.colors)
         top_view = draw_vehicle_baseplates(top_view, world_tracks_vehicles, cfg.bev.scalefactor, cfg.colors, 3)
@@ -49,6 +50,7 @@ def start(cap, cfg):
         if cv2.waitKey(1) == ord('q'):
             break
         _, frame = cap.read()
+        i+=1
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':

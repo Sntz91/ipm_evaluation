@@ -11,7 +11,6 @@ import numpy as np
 import yaml
 import cv2
 
-# TODO We need real GT first ...
 
 def count_identity_switches(track_vehicle_correspondences):
     n_identity_switches = 0
@@ -46,8 +45,9 @@ def start(cfg):
 
     # The loop is not that fast because we are not loading imgs into ram..
     for (image_pv, image_tv), (vehicles_pv, vehicles_tv) in dataset:
-        img_camera1 = image_pv[1] # only camera 2 at first
-        vehicles_pv = vehicles_pv[1]
+        img_camera1 = image_pv[0] # only camera 2 at first
+        vehicles_pv = vehicles_pv[0]
+        print(vehicles_tv)
         detections = detector.detect(img_camera1)
         image_tracks = image_tracker.track(detections)
         image_tracks_transformed = position_estimator.transform(image_tracks, detections)

@@ -336,6 +336,8 @@ class PositionEstimation:
     def transform(self, tracks, detections):
         for track in tracks:
             mask = detections[track.detection_id-1].mask
+            if mask.size == 0:
+                print('aha')
             world_position, psi_world, gcp_img = self.map_entity_and_return_relevant_points(track, mask)
             track.xy = (world_position[0], world_position[1])
         return tracks
