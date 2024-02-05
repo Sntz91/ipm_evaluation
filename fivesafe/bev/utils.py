@@ -3,6 +3,20 @@ import cv2
 import numpy as np
 from math import sin, cos
 
+
+def draw_bottom_edge(img, edge: np.ndarray) -> None:
+    edge = edge.astype(int)
+    cv2.polylines(img, [edge], True, (0, 0, 255), 2)
+
+
+def draw_rotated_bbox(img, bb):
+    cv2.polylines(img, [bb], True, (255, 255, 0), 2)
+
+
+def draw_gcp(img, pt):
+    cv2.circle(img, (int(pt[0]), int(pt[1])), 5, (255, 0, 0), -1)
+
+
 def draw_world_position(top_view, position, track_id, color=None):
     if not color: 
         color = COLORS[track_id] 

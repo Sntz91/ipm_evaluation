@@ -14,7 +14,8 @@ SHIFT_DICT = {
     "truck": [5.0, 1.3],
     "bus": [5.0, 1.5]
 }
-        
+
+
 class PositionEstimation:
     def __init__(self, H_fname: str, scale_factor: float) -> None:
         with open(H_fname, 'r') as file:
@@ -29,11 +30,11 @@ class PositionEstimation:
             world_position = self.calculate_ground_contact_point(track.label(), mask, track.xywh())
             track.xy = (world_position[0], world_position[1])
         return tracks
-    
+
     def transform_w_rotated_bbox(self, tracks, rotated_bbox):
         pass
 
-    def calculate_ground_contact_point(self, obj_class, mask, bb):
+    def calculate_ground_contact_point(self, obj_class, mask, bb, debug=False):
         """ Calculate Ground Contact Point """
         if obj_class in ('person'):
             return self._calculate_gcp_midpoint(bb)
@@ -50,13 +51,25 @@ class PositionEstimation:
             shifted_gcp_c1_image = self._transform_pts_world_to_img(shifted_gcp_c1)
             shifted_gcp_c2_image = self._transform_pts_world_to_img(shifted_gcp_c2)
             if shifted_gcp_c1_image[0][1] < shifted_gcp_c2_image[0][1]:
-                return shifted_gcp_c1[0]
-            return shifted_gcp_c2[0]
+                gcp = shifted_gcp_c1[0]
+                gcp_img = shifted_gcp_c1_image
+            else:
+                gcp = shifted_gcp_c2[0]
+                gcp_img = shifted_gcp_c2_image
+            if debug:
+                return (
+                    gcp,
+                    rotated_bbox,
+                    gcp_img[0],
+                    bottom_edge_img,
+                    bottom_edge_world
+                )
+            return gcp
 
     def _calculate_gcp_midpoint(self, bb):
-        """ 
-            Calculate GCP for Person. 
-            It's the mid of the bottom edge of Bounding Box. 
+        """
+            Calculate GCP for Person.
+            It's the mid of the bottom edge of Bounding Box.
         """
         gcp_img = np.array([[bb[0], bb[1] + bb[3]]])
         gcp_world = self._transform_pts_image_to_world(gcp_img)
