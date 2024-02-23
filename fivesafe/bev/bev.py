@@ -123,9 +123,9 @@ class PositionEstimation:
         candidates = [(ref_vertex_idx-1) % bbox_len, (ref_vertex_idx+1) % bbox_len]
         return candidates
 
-    def _get_neighbour_lengths(self, 
-        rotated_bbox: np.ndarray, 
-        idx_ref_vertex: int, 
+    def _get_neighbour_lengths(self,
+        rotated_bbox: np.ndarray,
+        idx_ref_vertex: int,
         idx_neighbours: list[int]
     ) -> list:
         """ Get the lenghts of ref point to neighbouring points """
@@ -134,7 +134,6 @@ class PositionEstimation:
 
     def _is_bb_higher_than_wide(self, rotated_bbox: np.ndarray) -> bool:
         """ Check if Bounding Box is wider than high """
-        # Like MARCEL, not sure why?
         idx_x_min, idx_x_max = np.argmin(rotated_bbox[:, 0]), np.argmax(rotated_bbox[:, 0])
         idx_y_min, idx_y_max = np.argmin(rotated_bbox[:, 1]), np.argmax(rotated_bbox[:, 1])
         width = rotated_bbox[idx_x_max][0] - rotated_bbox[idx_x_min][0]
@@ -172,9 +171,9 @@ class PositionEstimation:
             [cos(theta), sin(theta)],
             [-sin(theta), cos(theta)]
         ], dtype=np.float32)
-        vector = bottom_edge[1] - bottom_edge[0] 
+        vector = bottom_edge[1] - bottom_edge[0]
         vector_norm = vector / np.linalg.norm(vector)
-        if vector_norm[0] < 0: # WHY?
+        if vector_norm[0] < 0:  # WHY?
             vector_norm = vector_norm * -1
         rotated_vector = rotation_matrix@vector_norm
         return rotated_vector
