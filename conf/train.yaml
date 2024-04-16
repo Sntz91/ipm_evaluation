@@ -1,0 +1,7 @@
+# Config for Training Yolov8
+path: '/Users/tobias/ziegleto/data/5Safe/vup/pedestrian_vup/'
+train: 'train/images'
+val: 'val/images'
+
+nc: 3
+names: ['car', 'person', 'bicycle']

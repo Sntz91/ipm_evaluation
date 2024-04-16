@@ -4,3 +4,5 @@
 **/.ipynb_checkpoints/**
 fivesafe/utilities/LightGlue/**
 fivesafe/utilities/LightGlue
+runs/**
+*.pt

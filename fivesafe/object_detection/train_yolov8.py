@@ -5,7 +5,7 @@ model = YOLO('yolov8s.pt')
  
 # Training.
 results = model.train(
-   data='conf/dataset.yaml',
+   data='conf/train.yaml',
    imgsz=640,
    epochs=8,
    name='finetuned'
